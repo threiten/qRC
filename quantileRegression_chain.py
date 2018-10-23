@@ -27,14 +27,12 @@ class quantileRegression_chain:
 
     def loadDataDF(self, h5name, start=0, stop=-1, rndm=12345, rsh=False, columns=None):
         
-        try:
-            print 'Loading Data Dataframe from: ', self.workDir+'/'+h5name
-            if rsh:
-                df = pd.read_hdf(self.workDir+'/'+h5name, 'df', columns=columns)
-            else:
-                df = pd.read_hdf(self.workDir+'/'+h5name, 'df', columns=columns, start=start, stop=stop)
-        except IOError:
-            print 'h5 file does not exist'
+        
+        print 'Loading Data Dataframe from: ', self.workDir+'/'+h5name
+        if rsh:
+            df = pd.read_hdf(self.workDir+'/'+h5name, 'df', columns=columns)
+        else:
+            df = pd.read_hdf(self.workDir+'/'+h5name, 'df', columns=columns, start=start, stop=stop)
         
         index = np.array(df.index)
         if rsh:
