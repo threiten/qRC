@@ -8,21 +8,17 @@ import ROOT as rt
 
 from joblib import delayed, Parallel, parallel_backend, register_parallel_backend
 from IdMVAComputer import IdMvaComputer, helpComputeIdMva 
-#import IdMvaComputer, helpComputeIdMva
 #from sklearn.externals.joblib import Parallel, parallel_backend, register_parallel_backend
 
 
 class quantileRegression_chain:
 
-    def __init__(self,year,EBEE,workDir):
+    def __init__(self,year,EBEE,workDir,varrs):
 
         self.year = year
         self.workDir = workDir
-        if year == '2017':
-            self.ShowerShapes = ['probeCovarianceIeIp','probeS4','probeR9','probePhiWidth','probeSigmaIeIe','probeEtaWidth']
-        elif year == '2016':
-            self.ShowerShapes = ['probeCovarianceIetaIphi','probeS4','probeR9','probePhiWidth','probeSigmaIeIe','probeEtaWidth']
         self.kinrho = ['probePt','probeScEta','probePhi','rho']
+        self.vars = varrs
         self.quantiles = [0.01,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99]
         self.backend = 'loky'
         self.EBEE = EBEE
@@ -93,10 +89,10 @@ class quantileRegression_chain:
 
     def trainOnData(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         
-        if var not in self.ShowerShapes:
-            raise ValueError('{} has to be one of {}'.format(var, self.ShowerShapes))
+        if var not in self.vars:
+            raise ValueError('{} has to be one of {}'.format(var, self.vars))
         
-        features = self.kinrho + self.ShowerShapes[:self.ShowerShapes.index(var)]
+        features = self.kinrho + self.vars[:self.vars.index(var)]
         X = self.data.loc[:,features]
         Y = self.data[var]
 
@@ -106,10 +102,10 @@ class quantileRegression_chain:
             
     def trainOnMC(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         
-        if var not in self.ShowerShapes:
-            raise ValueError('{} has to be one of {}'.format(var, ShowerShapes))
+        if var not in self.vars:
+            raise ValueError('{} has to be one of {}'.format(var, vars))
         
-        features = self.kinrho + ['{}_corr'.format(x) for x in self.ShowerShapes[:self.ShowerShapes.index(var)]]
+        features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
         X = self.MC.loc[:,features]
         Y = self.MC[var]
 
@@ -119,21 +115,17 @@ class quantileRegression_chain:
 
     def correctY(self, var, n_jobs=1, store=True):
         
-        features = self.kinrho + ['{}_corr'.format(x) for x in self.ShowerShapes[:self.ShowerShapes.index(var)]]
+        features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
         X = self.MC.loc[:,features]
         Y = self.MC[var]
         
         if X.isnull().values.any():
-            # print 'Correct {} first !'.format(self.ShowerShapes[:self.ShowerShapes.index(var)])
-            raise KeyError('Correct {} first!'.format(self.ShowerShapes[:self.ShowerShapes.index(var)]))
+            raise KeyError('Correct {} first!'.format(self.vars[:self.vars.index(var)]))
 
         print "Features: X = ", features, " target y = ", var
         
         Y = Y.values.reshape(-1,1)
         Z = np.hstack([X,Y])
-
-        # clf_mc = [self.clfs_mc[i][var] for i in range(len(self.quantiles))]
-        # clf_d = [self.clfs_d[i][var] for i in range(len(self.quantiles))]
 
         with parallel_backend(self.backend):
             Ycorr = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(applyCorrection)(self.clfs_mc,self.clfs_d,ch[:,:-1],ch[:,-1]) for ch in np.array_split(Z,n_jobs) ) )
@@ -143,7 +135,7 @@ class quantileRegression_chain:
 
     def trainAllMC(self,weightsDir):
         
-        for var in self.ShowerShapes:
+        for var in self.vars:
             self.trainOnMC(var,weightsDir=weightsDir)
             self.loadClfs(var,weightsDir)
             self.correctY(var,n_jobs=20)
@@ -157,14 +149,14 @@ class quantileRegression_chain:
         
         clf = pkl.load(gzip.open('{}/{}/{}_weights_{}_{}_{}.pkl'.format(self.workDir,weightsDir,key,self.EBEE,var,str(q).replace('.','p'))))
         if key == 'mc':
-            if clf['X'] != self.kinrho + ['{}_corr'.format(x) for x in self.ShowerShapes[:self.ShowerShapes.index(var)]] or clf['Y'] != var:
-                raise ValueError('{}/{}/{}_weights_{}_{}_{}.pkl was not trained with the right order of ShowerShapes!'.format(self.workDir,weightsDir,key,self.EBEE,var,str(q).replace('.','p')))
+            if clf['X'] != self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]] or clf['Y'] != var:
+                raise ValueError('{}/{}/{}_weights_{}_{}_{}.pkl was not trained with the right order of Variables!'.format(self.workDir,weightsDir,key,self.EBEE,var,str(q).replace('.','p')))
             else:
                 return clf['clf']
 
         if key == 'data':
-            if clf['X'] != self.kinrho + ['{}'.format(x) for x in self.ShowerShapes[:self.ShowerShapes.index(var)]] or clf['Y'] != var:
-                raise ValueError('{}/{}/{}_weights_{}_{}_{}.pkl was not trained with the right order of ShowerShapes!'.format(self.workDir,weightsDir,key,self.EBEE,var,str(q).replace('.','p')))
+            if clf['X'] != self.kinrho + ['{}'.format(x) for x in self.vars[:self.vars.index(var)]] or clf['Y'] != var:
+                raise ValueError('{}/{}/{}_weights_{}_{}_{}.pkl was not trained with the right order of Variables!'.format(self.workDir,weightsDir,key,self.EBEE,var,str(q).replace('.','p')))
             else:
                 return clf['clf']
     
@@ -259,4 +251,4 @@ class Corrector:
       return np.array([ self.correctEvent(iev) for iev in xrange(self.Y.size) ]).ravel()
 
 def applyCorrection(mcclf,dataclf,X,Y,diz=False):
-   return Corrector(mcclf,dataclf,X,Y,diz)()    
+   return Corrector(mcclf,dataclf,X,Y,diz)()
