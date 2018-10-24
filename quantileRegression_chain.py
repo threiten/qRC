@@ -144,23 +144,23 @@ class quantileRegression_chain:
             
     def loadClfs(self, var, weightsDir):
         
-        self.clfs_mc = [self.load_clf_safe('mc', weightsDir, var, q) for q in self.quantiles]
-        self.clfs_d = [self.load_clf_safe('data', weightsDir, var, q) for q in self.quantiles]
+        self.clfs_mc = [self.load_clf_safe(weightsDir, 'mc_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
+        self.clfs_d = [self.load_clf_safe(weightsDir,'data_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
         
-    def load_clf_safe(self,key,weightsDir,var,q):
+    def load_clf_safe(self,weightsDir,name):
         
-        clf = pkl.load(gzip.open('{}/{}/{}_weights_{}_{}_{}.pkl'.format(self.workDir,weightsDir,key,self.EBEE,var,str(q).replace('.','p'))))
-        if key == 'mc':
-            if clf['X'] != self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]] or clf['Y'] != var:
-                raise ValueError('{}/{}/{}_weights_{}_{}_{}.pkl was not trained with the right order of Variables!'.format(self.workDir,weightsDir,key,self.EBEE,var,str(q).replace('.','p')))
-            else:
-                return clf['clf']
-
-        if key == 'data':
-            if clf['X'] != self.kinrho + ['{}'.format(x) for x in self.vars[:self.vars.index(var)]] or clf['Y'] != var:
-                raise ValueError('{}/{}/{}_weights_{}_{}_{}.pkl was not trained with the right order of Variables!'.format(self.workDir,weightsDir,key,self.EBEE,var,str(q).replace('.','p')))
-            else:
-                return clf['clf']
+        clf = pkl.load(gzip.open('{}/{}/{}'.format(self.workDir,weightsDir,name)))
+        if name.startswith('mc'):
+            X_name = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
+        elif name.startswith('data'):
+            X_name = self.kinrho +  self.vars[:self.vars.index(var)]
+        else:
+            raise NameError('name has to start with data or mc')
+   
+        if clf['X'] != X_name or clf['Y'] != var:
+            raise ValueError('{}/{}/{} was not trained with the right order of Variables!'.format(self.workDir,weightsDir,name))
+        else:
+            return clf['clf']
     
     def computeIdMvas(self,mvas,weights,key,n_jobs=1,leg2016=False):
       weightsEB,weightsEE = weights
