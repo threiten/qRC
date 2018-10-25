@@ -13,7 +13,7 @@ from Corrector import Corrector, applyCorrection
 #from sklearn.externals.joblib import Parallel, parallel_backend, register_parallel_backend
 
 
-class quantileRegression_chain:
+class quantileRegression_chain(object):
 
     def __init__(self,year,EBEE,workDir,varrs):
 
@@ -26,14 +26,12 @@ class quantileRegression_chain:
         self.EBEE = EBEE
 
 
-    def loadDataDF(self, h5name, start=0, stop=-1, rndm=12345, rsh=False, columns=None):
+    def _loadDF(self, h5name, start=0, stop=-1, rndm=12345, rsh=False, columns=None):
         
-        
-        print 'Loading Data Dataframe from: ', self.workDir+'/'+h5name
         if rsh:
-            df = pd.read_hdf(self.workDir+'/'+h5name, 'df', columns=columns)
+            df = pd.read_hdf('{}/{}'.format(self.workDir,h5name), 'df', columns=columns)
         else:
-            df = pd.read_hdf(self.workDir+'/'+h5name, 'df', columns=columns, start=start, stop=stop)
+            df = pd.read_hdf('{}/{}'.format(self.workDir,h5name), 'df', columns=columns, start=start, stop=stop)
         
         index = np.array(df.index)
         if rsh:
@@ -56,66 +54,54 @@ class quantileRegression_chain:
         if df.index.size==0:
             raise ValueError('Wrong dataframe selected!')
 
-        self.data = df
+        return df
 
-    def loadMCDF(self,h5name,start,stop,rndm=12345,rsh=False,columns=None):
+    def loadMCDF(self,h5name,start=0,stop=-1,rndm=12345,rsh=False,columns=None):
         
-        try:
-            print 'Loading Monte-Carlo Dataframe from: ', self.workDir+'/'+h5name
-            df = pd.read_hdf(self.workDir+'/'+h5name, 'df', columns=columns)
-        except IOError:
-            print 'h5 file does not exist'
+        print 'Loading MC Dataframe from: {}/{}'.format(self.workDir,h5name)
+        self.MC = self._loadDF(h5name,start,stop,rndm,rsh,columns)
         
-        index = np.array(df.index)
-        if rsh:
-            print 'Reshuffling events'
-            np.random.seed(rndm)
-            np.random.shuffle(index)
-            df = df.ix[index]
-            df.reset_index(drop=True, inplace=True)
+    def loadDataDF(self,h5name,start=0,stop=-1,rndm=12345,rsh=False,columns=None):
         
-        if stop == -1:
-            stop = df.index.size + 1
-
-        df = df[start:stop]
-
-        if self.EBEE == 'EB':
-            df = df.query('probeScEta>-1.4442 and probeScEta<1.4442')
-        elif self.EBEE == 'EE':
-            df = df.query('probeScEta<-1.556 or probeScEta>1.556')
-            
-        if df.index.size==0:
-            raise ValueError('Wrong dataframe selected!')
-
-        self.MC = df
+        print 'Loading data Dataframe from: {}/{}'.format(self.workDir,h5name)
+        self.data = self._loadDF(h5name,start,stop,rndm,rsh,columns)
 
     def trainOnData(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         
-        if var not in self.vars:
-            raise ValueError('{} has to be one of {}'.format(var, self.vars))
+        print 'Training quantile regressors on data'
+        self._trainQuantiles('data',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
         
-        features = self.kinrho + self.vars[:self.vars.index(var)]
-        X = self.data.loc[:,features]
-        Y = self.data[var]
-
-        print 'Training regressors on data'
-        with parallel_backend(self.backend):
-            Parallel(n_jobs=len(self.quantiles),verbose=20)(delayed(trainClf)(q,maxDepth,minLeaf,X,Y,save=True,outDir='{}/{}'.format(self.workDir,weightsDir),name='data_weights_{}_{}_{}'.format(self.EBEE,var,str(q).replace('.','p')),X_names=features,Y_name=var) for q in self.quantiles)
-            
     def trainOnMC(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         
+        print 'Training quantile regressors on MC'
+        self._trainQuantiles('MC',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
+
+    def _trainQuantiles(self,key,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
+
         if var not in self.vars:
             raise ValueError('{} has to be one of {}'.format(var, vars))
         
-        features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
-        X = self.MC.loc[:,features]
-        Y = self.MC[var]
+        if key.startswith('MC'):
+            features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
+        elif key.startswith('data'):
+            features = self.kinrho + self.vars[:self.vars.index(var)]
+        else:
+            raise KeyError('Key needs to specify if data or MC')
 
-        print 'Training regressor on MC'
+        if 'diz' in key:
+            X = self.data.query('{}!=0'.format(var)).loc[:,features]
+            Y = self.data.query('{}!=0'.format(var))[var]
+        else:
+            X = self.MC.loc[:,features]
+            Y = self.MC[var]
+
+        name_key = 'data' if 'data' in key else 'mc'
+
         with parallel_backend(self.backend):
-            Parallel(n_jobs=len(self.quantiles),verbose=20)(delayed(trainClf)(q,maxDepth,minLeaf,X,Y,save=True,outDir='{}/{}'.format(self.workDir,weightsDir),name='mc_weights_{}_{}_{}'.format(self.EBEE,var,str(q).replace('.','p')),X_names=features,Y_name=var) for q in self.quantiles)
+            Parallel(n_jobs=len(self.quantiles),verbose=20)(delayed(trainClf)(q,maxDepth,minLeaf,X,Y,save=True,outDir='{}/{}'.format(self.workDir,weightsDir),name='{}_weights_{}_{}_{}'.format(name_key,self.EBEE,var,str(q).replace('.','p')),X_names=features,Y_name=var) for q in self.quantiles)
 
-    def correctY(self, var, n_jobs=1, store=True):
+        
+    def correctY(self, var, n_jobs=1, diz=False):
         
         features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
         X = self.MC.loc[:,features]
@@ -130,17 +116,16 @@ class quantileRegression_chain:
         Z = np.hstack([X,Y])
 
         with parallel_backend(self.backend):
-            Ycorr = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(applyCorrection)(self.clfs_mc,self.clfs_d,ch[:,:-1],ch[:,-1]) for ch in np.array_split(Z,n_jobs) ) )
+            Ycorr = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(applyCorrection)(self.clfs_mc,self.clfs_d,ch[:,:-1],ch[:,-1],diz=diz) for ch in np.array_split(Z,n_jobs) ) )
 
-        if store:
-            self.MC['{}_corr'.format(var)] = Ycorr
+        self.MC['{}_corr'.format(var)] = Ycorr
 
-    def trainAllMC(self,weightsDir):
+    def trainAllMC(self,weightsDir,n_jobs=1):
         
         for var in self.vars:
             self.trainOnMC(var,weightsDir=weightsDir)
             self.loadClfs(var,weightsDir)
-            self.correctY(var,n_jobs=20)
+            self.correctY(var,n_jobs=n_jobs)
             
     def loadClfs(self, var, weightsDir):
         
