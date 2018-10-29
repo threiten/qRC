@@ -18,16 +18,16 @@ class quantileRegression_chain_disc(quantileRegression_chain):
 
     def trainp0tclf(self,var,key,weightsDir ='weights_p0t',n_jobs=1):
         
-        if key == 'MC':
+        if key == 'mc':
             df = self.MC
         elif key == 'data':
             df = self.data
         else:
-            raise KeyError('Please use data or MC')
+            raise KeyError('Please use data or mc')
 
         df['p0t_{}'.format(var)] = np.apply_along_axis(lambda x: 0 if x==0 else 1,0,df[var].reshape(1,-1))
-        X = df.loc[:,self.kinrho + self.vars[:self.vars.index(var)]]
-        Y = df['p0t_{}'.format(var)]
+        X = df.loc[:,self.kinrho + self.vars[:self.vars.index(var)]].values
+        Y = df['p0t_{}'.format(var)].values
         clf = xgb.XGBClassifier(n_estimators=300,learning_rate=0.05,maxDepth=10,subsample=0.5,gamma=0, n_jobs=n_jobs)
         with parallel_backend(self.backend):
             clf.fit(X,Y)
@@ -40,8 +40,8 @@ class quantileRegression_chain_disc(quantileRegression_chain):
 
     def trainTailRegressor(self,var,weightsDir='weights_tail',n_jobs=1):
         
-        X = self.data.loc[:,self.kinrho+self.vars[:self.vars.index(var)]]
-        Y = self.data[var]
+        X = self.data.loc[:,self.kinrho+self.vars[:self.vars.index(var)]].values
+        Y = self.data[var].values
         
         clf = xgb.XGBRegressor(n_estimators=300,gamma=0, maxDepth=10, n_jobs=n_jobs)
         with parallel_backend(self.backend):
@@ -54,12 +54,12 @@ class quantileRegression_chain_disc(quantileRegression_chain):
 
     def loadTailRegressor(self,var,weightsDir):
         
-        self.reg_tail = self.load_clf_safe(weightsDir,'data_reg_tail_{}_{}.pkl'.format(self.EBEE,var))
+        self.reg_tail = self.load_clf_safe(var, weightsDir,'data_reg_tail_{}_{}.pkl'.format(self.EBEE,var))
 
     def loadp0tclf(self,var,weightsDir):
         
-        self.p0tclf_mc = self.load_clf_safe(weightsDir,'mc_clf_p0t_{}_{}.pkl'.format(self.EBEE,var))
-        self.p0tclf_d = self.load_clf_safe(weightsDir,'data_clf_p0t_{}_{}.pkl'.format(self.EBEE,var))
+        self.p0tclf_mc = self.load_clf_safe(var, weightsDir,'mc_clf_p0t_{}_{}.pkl'.format(self.EBEE,var))
+        self.p0tclf_d = self.load_clf_safe(var, weightsDir,'data_clf_p0t_{}_{}.pkl'.format(self.EBEE,var))
 
     def shiftY(self,var,n_jobs=1):
         
@@ -70,7 +70,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         if X.isnull().values.any():
             raise KeyError('Correct {} first!'.format(self.vars[:self.vars.index(var)]))
 
-        Y = Y.values.reshape(1,-1)
+        Y = Y.values.reshape(-1,1)
         Z = np.hstack([X,Y])
         
         print 'Shifting {} with input features {}'.format(var,features)
@@ -93,13 +93,13 @@ class quantileRegression_chain_disc(quantileRegression_chain):
     def trainOnMC(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         
         print 'Training quantile regressors on MC'
-        self._trainQuantiles('MC_diz',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
+        self._trainQuantiles('mc_diz',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
     
     def trainAllMC(self,weightsDir,n_jobs=1):
 
         for var in self.vars:
             self.trainOnMC(var,weightsDir=weightsDir)
             self.loadTailRegressor(var,weightsDir=weightsDir)
-            self.loadp0tclfs(var,weightsDir=weightsDir)
+            self.loadp0tclf(var,weightsDir=weightsDir)
             self.loadClfs(var,weightsDir=weightsDir)
             self.correctY(var,n_jobs=n_jobs)

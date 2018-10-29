@@ -5,6 +5,7 @@ import pickle as pkl
 import gzip
 import os
 import ROOT as rt
+from root_pandas import read_root
 
 from joblib import delayed, Parallel, parallel_backend, register_parallel_backend
 
@@ -24,8 +25,39 @@ class quantileRegression_chain(object):
         self.quantiles = [0.01,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99]
         self.backend = 'loky'
         self.EBEE = EBEE
+        self.branches = ['probeScEta','probeEtaWidth','probeR9','weight','probeSigmaRR','tagScPreshowerEnergy','probePass_invEleVeto','tagChIso03','probeChIso03','probeS4','tagR9','tagPhiWidth','probePt','tagSigmaRR','probePhiWidth','probeChIso03worst','puweight','tagEleMatch','tagPhi','probeScEnergy','nvtx','probePhoIso','tagPhoIso','run','tagScEta','probeEleMatch','probeCovarianceIeIp','tagPt','rho','tagS4','tagSigmaIeIe','tagCovarianceIpIp','tagCovarianceIeIp','tagScEnergy','tagChIso03worst','probeSigmaIeIe','probePhi','mass','probeCovarianceIpIp','tagEtaWidth','probeScPreshowerEnergy']
 
+        self.ptmin  =  25.
+        self.ptmax  =  150.
+        self.etamin = -2.5
+        self.etamax =  2.5
+        self.phimin = -3.14
+        self.phimax =  3.14
 
+    def loadROOT(self,path,tree,cut=None,rsh=True):
+        
+        df = read_root(path,tree,columns=self.branches)
+
+        index = np.array(df.index)
+        
+        print 'Reshuffling events'
+        np.random.seed(rndm)
+        np.random.shuffle(index)
+        df = df.ix[index]
+        df.reset_index(drop=True, inplace=True)
+
+        df = df.query('probePt>@self.ptmin and probePt<@self.ptmax and probeScEta>@self.etamin and probeScEta<@self.etamax and probePhi>@self.phimin and probePhi<@self.phimax')
+
+        if self.EBEE == 'EB':
+            df = df.query('probeScEta>-1.4442 and probeScEta<1.4442')
+        elif self.EBEE == 'EE':
+            df = df.query('probeScEta<-1.556 or probeScEta>1.556')
+        
+        if cut is not None:
+            df = df.query(cut)
+            
+        return df
+        
     def _loadDF(self, h5name, start=0, stop=-1, rndm=12345, rsh=False, columns=None):
         
         if rsh:
@@ -74,26 +106,28 @@ class quantileRegression_chain(object):
     def trainOnMC(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         
         print 'Training quantile regressors on MC'
-        self._trainQuantiles('MC',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
+        self._trainQuantiles('mc',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
 
     def _trainQuantiles(self,key,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
 
         if var not in self.vars:
             raise ValueError('{} has to be one of {}'.format(var, vars))
         
-        if key.startswith('MC'):
+        if 'diz' in key:
+            querystr = '{}!=0'.format(var)
+        else:
+            querystr = '{}=={}'.format(var,var)
+
+        if key.startswith('mc'):
             features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
+            X = self.MC.query(querystr).loc[:,features]
+            Y = self.MC.query(querystr)[var]
         elif key.startswith('data'):
             features = self.kinrho + self.vars[:self.vars.index(var)]
+            X = self.data.query(querystr).loc[:,features]
+            Y = self.data.query(querystr)[var]
         else:
-            raise KeyError('Key needs to specify if data or MC')
-
-        if 'diz' in key:
-            X = self.data.query('{}!=0'.format(var)).loc[:,features]
-            Y = self.data.query('{}!=0'.format(var))[var]
-        else:
-            X = self.MC.loc[:,features]
-            Y = self.MC[var]
+            raise KeyError('Key needs to specify if data or mc')
 
         name_key = 'data' if 'data' in key else 'mc'
 
@@ -129,10 +163,10 @@ class quantileRegression_chain(object):
             
     def loadClfs(self, var, weightsDir):
         
-        self.clfs_mc = [self.load_clf_safe(weightsDir, 'mc_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
-        self.clfs_d = [self.load_clf_safe(weightsDir,'data_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
+        self.clfs_mc = [self.load_clf_safe(var, weightsDir, 'mc_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
+        self.clfs_d = [self.load_clf_safe(var, weightsDir,'data_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
         
-    def load_clf_safe(self,weightsDir,name):
+    def load_clf_safe(self,var,weightsDir,name):
         
         clf = pkl.load(gzip.open('{}/{}/{}'.format(self.workDir,weightsDir,name)))
         if name.startswith('mc'):
@@ -155,7 +189,7 @@ class quantileRegression_chain(object):
     def computeIdMva(self,name,weightsEB,weightsEE,key,correctedVariables,tpC,leg2016,n_jobs):
         stride = self.MC.index.size / n_jobs
         print("Computing %s, correcting %s, stride %s" % (name,correctedVariables,stride) )
-        if key == 'MC':
+        if key == 'mc':
             with parallel_backend(self.backend):
                 Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeIdMva)(weightsEB,weightsEE,correctedVariables,self.MC[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.MC.index.size,stride)))
             self.MC[name] = Y
