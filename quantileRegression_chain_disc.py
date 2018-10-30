@@ -99,7 +99,6 @@ class quantileRegression_chain_disc(quantileRegression_chain):
 
         for var in self.vars:
             self.trainOnMC(var,weightsDir=weightsDir)
-            self.loadTailRegressor(var,weightsDir=weightsDir)
             self.loadp0tclf(var,weightsDir=weightsDir)
             self.loadClfs(var,weightsDir=weightsDir)
             self.correctY(var,n_jobs=n_jobs)
