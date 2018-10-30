@@ -16,7 +16,7 @@ from Shifter import Shifter, applyShift
 
 class quantileRegression_chain_disc(quantileRegression_chain):
 
-    def trainp0tclf(self,var,key,weightsDir ='weights_p0t',n_jobs=1):
+    def trainp0tclf(self,var,key,weightsDir ='weights_qRC',n_jobs=1):
         
         if key == 'mc':
             df = self.MC
@@ -38,10 +38,10 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         pkl.dump(dic,gzip.open('{}/{}/{}_clf_p0t_{}_{}.pkl'.format(self.workDir,weightsDir,key,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
 
 
-    def trainTailRegressor(self,var,weightsDir='weights_tail',n_jobs=1):
+    def trainTailRegressor(self,var,weightsDir='weights_qRC',n_jobs=1):
         
-        X = self.data.loc[:,self.kinrho+self.vars[:self.vars.index(var)]].values
-        Y = self.data[var].values
+        X = self.MC.loc[:,self.kinrho+['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]].values
+        Y = self.MC[var].values
         
         clf = xgb.XGBRegressor(n_estimators=300,gamma=0, maxDepth=10, n_jobs=n_jobs)
         with parallel_backend(self.backend):
@@ -50,11 +50,11 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         X_names = self.kinrho+self.vars[:self.vars.index(var)]
         Y_name = var
         dic = {'clf': clf, 'X': X_names, 'Y': Y_name}
-        pkl.dump(dic,gzip.open('{}/{}/data_reg_tail_{}_{}.pkl'.format(self.workDir,weightsDir,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
+        pkl.dump(dic,gzip.open('{}/{}/mc_reg_tail_{}_{}.pkl'.format(self.workDir,weightsDir,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
 
     def loadTailRegressor(self,var,weightsDir):
         
-        self.reg_tail = self.load_clf_safe(var, weightsDir,'data_reg_tail_{}_{}.pkl'.format(self.EBEE,var))
+        self.reg_tail = self.load_clf_safe(var, weightsDir,'mc_reg_tail_{}_{}.pkl'.format(self.EBEE,var))
 
     def loadp0tclf(self,var,weightsDir):
         
@@ -76,7 +76,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         print 'Shifting {} with input features {}'.format(var,features)
 
         with parallel_backend(self.backend):
-            Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(applyShift)(self.p0tclf_mc,self.p0tclf_d,self.reg_tail,sli[:,:-1],sli[:,-1]) for sli in np.array_split(Z,n_jobs)))
+            Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(applyShift)(self.p0tclf_mc,self.p0tclf_d,self.clfs_mc,sli[:,:-1],sli[:,-1]) for sli in np.array_split(Z,n_jobs)))
 
         self.MC['{}_shift'.format(var)] = Y_shift
 

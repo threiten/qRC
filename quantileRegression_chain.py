@@ -27,6 +27,13 @@ class quantileRegression_chain(object):
         self.EBEE = EBEE
         self.branches = ['probeScEta','probeEtaWidth','probeR9','weight','probeSigmaRR','tagScPreshowerEnergy','probePass_invEleVeto','tagChIso03','probeChIso03','probeS4','tagR9','tagPhiWidth','probePt','tagSigmaRR','probePhiWidth','probeChIso03worst','puweight','tagEleMatch','tagPhi','probeScEnergy','nvtx','probePhoIso','tagPhoIso','run','tagScEta','probeEleMatch','probeCovarianceIeIp','tagPt','rho','tagS4','tagSigmaIeIe','tagCovarianceIpIp','tagCovarianceIeIp','tagScEnergy','tagChIso03worst','probeSigmaIeIe','probePhi','mass','probeCovarianceIpIp','tagEtaWidth','probeScPreshowerEnergy']
 
+        if year == '2016':
+            self.branches = self.branches + ['probePass_invEleVeto','probeCovarianceIetaIphi','probeCovarianceIphiIphi','probeCovarianceIetaIphi','probeCovarianceIphiIphi']
+            self.branches.remove('probeCovarianceIeIp')
+            self.branches.remove('probeCovarianceIpIp')
+            self.branches.remove('tagCovarianceIeIp')
+            self.branches.remove('tagCovarianceIpIp')
+
         self.ptmin  =  25.
         self.ptmax  =  150.
         self.etamin = -2.5
@@ -34,9 +41,12 @@ class quantileRegression_chain(object):
         self.phimin = -3.14
         self.phimax =  3.14
 
-    def loadROOT(self,path,tree,cut=None,rsh=True):
+    def loadROOT(self,path,tree,outname,cut=None,split=None,rsh=True,rndm=12345):
         
-        df = read_root(path,tree,columns=self.branches)
+        if 'Data' in tree:
+            df = read_root(path,tree,columns=self.branches)
+        elif self.year == '2016':
+            df = read_root(path,tree,columns=self.branches+['probePhoIso_corr'])
 
         index = np.array(df.index)
         
@@ -44,17 +54,36 @@ class quantileRegression_chain(object):
         np.random.seed(rndm)
         np.random.shuffle(index)
         df = df.ix[index]
-        df.reset_index(drop=True, inplace=True)
 
         df = df.query('probePt>@self.ptmin and probePt<@self.ptmax and probeScEta>@self.etamin and probeScEta<@self.etamax and probePhi>@self.phimin and probePhi<@self.phimax')
 
         if self.EBEE == 'EB':
+            print 'Selecting events from EB'
             df = df.query('probeScEta>-1.4442 and probeScEta<1.4442')
         elif self.EBEE == 'EE':
+            print 'Selecting events from EE'
             df = df.query('probeScEta<-1.556 or probeScEta>1.556')
         
+        
         if cut is not None:
+            print 'Applying cut {}'.format(cut)
             df = df.query(cut)
+        
+        df.reset_index(drop=True, inplace=True)
+
+        if self.year=='2016' and not 'Data' in tree:
+            df['probePhoIso_corr_sto'] = df['probePhoIso_corr']
+            
+        if split is not None:
+            print 'Splitting dataframe in train and test sample. Split size is at {}%'.format(int(split*100))
+            df_train = df[0:int(split*df.index.size)]
+            df_test = df[int(split*df.index.size):]
+            print 'Number of events in training dataframe {}. Saving to {}/{}_(train/test).h5'.format(df_train.index.size,self.workDir,outname)
+            df_train.to_hdf('{}/{}_train.h5'.format(self.workDir,outname),'df',mode='w',format='t')
+            df_test.to_hdf('{}/{}_test.h5'.format(self.workDir,outname),'df',mode='w',format='t')
+        else:
+            print 'Number of events in dataframe {}. Saving to {}/{}.h5'.format(df.index.size,self.workDir,outname)
+            df.to_hdf('{}/{}.h5'.format(self.workDir,outname),'df',mode='w',format='t')
             
         return df
         
@@ -110,8 +139,8 @@ class quantileRegression_chain(object):
 
     def _trainQuantiles(self,key,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
 
-        if var not in self.vars:
-            raise ValueError('{} has to be one of {}'.format(var, vars))
+        if var not in self.vars+[x+'_shift' for x in self.vars]:
+            raise ValueError('{} has to be one of {}'.format(var, self.vars))
         
         if 'diz' in key:
             querystr = '{}!=0'.format(var)
@@ -137,7 +166,7 @@ class quantileRegression_chain(object):
         
     def correctY(self, var, n_jobs=1, diz=False):
         
-        features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
+        features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var[:var.find('_')])]]
         X = self.MC.loc[:,features]
         Y = self.MC[var]
         
