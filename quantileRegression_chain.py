@@ -181,7 +181,7 @@ class quantileRegression_chain(object):
         with parallel_backend(self.backend):
             Ycorr = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(applyCorrection)(self.clfs_mc,self.clfs_d,ch[:,:-1],ch[:,-1],diz=diz) for ch in np.array_split(Z,n_jobs) ) )
 
-        self.MC['{}_corr'.format(var)] = Ycorr
+        self.MC['{}_corr'.format(var[:var.find('_')])] = Ycorr
 
     def trainAllMC(self,weightsDir,n_jobs=1):
         
@@ -195,21 +195,23 @@ class quantileRegression_chain(object):
         self.clfs_mc = [self.load_clf_safe(var, weightsDir, 'mc_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
         self.clfs_d = [self.load_clf_safe(var, weightsDir,'data_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
         
-    def load_clf_safe(self,var,weightsDir,name):
+    def load_clf_safe(self,var,weightsDir,name,X_name=None):
         
         clf = pkl.load(gzip.open('{}/{}/{}'.format(self.workDir,weightsDir,name)))
-        if name.startswith('mc'):
-            X_name = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
-        elif name.startswith('data'):
-            X_name = self.kinrho +  self.vars[:self.vars.index(var)]
-        else:
-            raise NameError('name has to start with data or mc')
-   
+
+        if X_name is None:
+            if name.startswith('mc'):
+                X_name = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
+            elif name.startswith('data'):
+                X_name = self.kinrho +  self.vars[:self.vars.index(var)]
+            else:
+                raise NameError('name has to start with data or mc')
+           
         if clf['X'] != X_name or clf['Y'] != var:
             raise ValueError('{}/{}/{} was not trained with the right order of Variables!'.format(self.workDir,weightsDir,name))
         else:
             return clf['clf']
-    
+
     def computeIdMvas(self,mvas,weights,key,n_jobs=1,leg2016=False):
       weightsEB,weightsEE = weights
       for name,tpC,correctedVariables in mvas:

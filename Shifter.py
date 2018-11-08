@@ -40,6 +40,8 @@ class Shifter:
 
         indq = np.searchsorted(bins,r)
         y_tail = np.interp(r,bins[indq-1:indq+1],[self.mcqtls[indq-1,iev],self.mcqtls[indq,iev]])
+        if y_tail<0.:
+            print 'Warning! Shifting to values <0. r = {}, bins = {}, qtls = {}'.format(r,bins[indq-1:indq+1],[self.mcqtls[indq-1,iev],self.mcqtls[indq,iev]])
         return y_tail
 
     def get_diffrats(self,pPeak_mc,pTail_mc,pPeak_data,pTail_data):

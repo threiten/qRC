@@ -13,6 +13,7 @@ from IdMVAComputer import IdMvaComputer, helpComputeIdMva
 from Corrector import Corrector, applyCorrection
 from quantileRegression_chain import quantileRegression_chain, trainClf
 from Shifter import Shifter, applyShift
+from Shifter2D import Shifter2D, apply2DShift
 
 class quantileRegression_chain_disc(quantileRegression_chain):
 
@@ -25,36 +26,64 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         else:
             raise KeyError('Please use data or mc')
 
+        features = self.kinrho
+
         df['p0t_{}'.format(var)] = np.apply_along_axis(lambda x: 0 if x==0 else 1,0,df[var].reshape(1,-1))
-        X = df.loc[:,self.kinrho + self.vars[:self.vars.index(var)]].values
+        X = df.loc[:,features].values
         Y = df['p0t_{}'.format(var)].values
         clf = xgb.XGBClassifier(n_estimators=300,learning_rate=0.05,maxDepth=10,subsample=0.5,gamma=0, n_jobs=n_jobs)
         with parallel_backend(self.backend):
             clf.fit(X,Y)
         
-        X_names = self.kinrho+self.vars[:self.vars.index(var)]
+        X_names = features
         Y_name = var
         dic = {'clf': clf, 'X': X_names, 'Y': Y_name}
         pkl.dump(dic,gzip.open('{}/{}/{}_clf_p0t_{}_{}.pkl'.format(self.workDir,weightsDir,key,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
-
-
-    def trainTailRegressor(self,var,weightsDir='weights_qRC',n_jobs=1):
         
-        X = self.MC.loc[:,self.kinrho+['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]].values
-        Y = self.MC[var].values
+    def train3Catcfl(self,var1,var2,key,weightsDir='weights_qRC',n_jobs=1):
+
+        if key == 'mc':
+            df = self.MC
+        elif key == 'data':
+            df = self.data
+        else:
+            raise KeyError('Please use data or mc')
         
-        clf = xgb.XGBRegressor(n_estimators=300,gamma=0, maxDepth=10, n_jobs=n_jobs)
+        features = self.kinrho
+
+        df['ChIsoCat'] = self.get_class_3Cat(df[var1].values,df[var2].values)
+        X = df.loc[:,features].values
+        Y = df['ChIsoCat'].values
+        clf = xgb.XGBClassifier(n_estimators=500,learning_rate=0.05,maxDepth=10,gamma=0, n_jobs=n_jobs)
         with parallel_backend(self.backend):
             clf.fit(X,Y)
-            
-        X_names = self.kinrho+self.vars[:self.vars.index(var)]
-        Y_name = var
-        dic = {'clf': clf, 'X': X_names, 'Y': Y_name}
-        pkl.dump(dic,gzip.open('{}/{}/mc_reg_tail_{}_{}.pkl'.format(self.workDir,weightsDir,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
 
-    def loadTailRegressor(self,var,weightsDir):
+        X_names = features
+        Y_names = [var1,var2]
+        dic = {'clf': clf, 'X': X_names, 'Y': Y_names}
+        pkl.dump(dic,gzip.open('{}/{}/{}_clf_3Cat_{}_{}_{}.pkl'.format(self.workDir,weightsDir,key,self.EBEE,var1,var2),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
         
-        self.reg_tail = self.load_clf_safe(var, weightsDir,'mc_reg_tail_{}_{}.pkl'.format(self.EBEE,var))
+    def get_class_3Cat(self,x,y):
+        return [0 if x[i]==0 and y[i]==0 else (1 if x[i]==0 and y[i]>0 else 2) for i in range(len(x))]
+
+    def load3Catclf(self,varrs,weightsDir='weights_qRC'):
+        
+        self.TCatclf_mc = self.load_clf_safe(varrs,weightsDir,'mc_clf_3Cat_{}_{}_{}.pkl'.format(self.EBEE,varrs[0],varrs[1]),self.kinrho)
+        self.TCatclf_d = self.load_clf_safe(varrs,weightsDir,'data_clf_3Cat_{}_{}_{}.pkl'.format(self.EBEE,varrs[0],varrs[1]),self.kinrho)
+
+    def trainTailRegressors(self,var,weightsDir='weights_qRC'):
+        
+        features = self.kinrho+['{}'.format(x) for x in self.vars if not x == var]
+        X = self.MC.query('{}!=0'.format(var)).loc[:,features].values
+        Y = self.MC.query('{}!=0'.format(var))[var].values
+        
+        with parallel_backend(self.backend):
+            Parallel(n_jobs=len(self.quantiles),verbose=20)(delayed(trainClf)(q,5,500,X,Y,save=True,outDir='{}/{}'.format(self.workDir,weightsDir),name='mc_weights_tail_{}_{}_{}'.format(self.EBEE,var,str(q).replace('.','p')),X_names=features,Y_name=var) for q in self.quantiles)
+            
+    def loadTailRegressors(self,varrs,weightsDir):
+        
+        self.tail_clfs_mc_0 = [self.load_clf_safe(varrs[0], weightsDir,'mc_weights_tail_{}_{}_{}.pkl'.format(self.EBEE,varrs[0],str(q).replace('.','p')),self.kinrho+[varrs[1]]) for q in self.quantiles]
+        self.tail_clfs_mc_1 = [self.load_clf_safe(varrs[1], weightsDir,'mc_weights_tail_{}_{}_{}.pkl'.format(self.EBEE,varrs[1],str(q).replace('.','p')),self.kinrho+[varrs[0]]) for q in self.quantiles]
 
     def loadp0tclf(self,var,weightsDir):
         
@@ -63,12 +92,9 @@ class quantileRegression_chain_disc(quantileRegression_chain):
 
     def shiftY(self,var,n_jobs=1):
         
-        features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
+        features = self.kinrho
         X = self.MC.loc[:,features]
         Y = self.MC[var]
-
-        if X.isnull().values.any():
-            raise KeyError('Correct {} first!'.format(self.vars[:self.vars.index(var)]))
 
         Y = Y.values.reshape(-1,1)
         Z = np.hstack([X,Y])
@@ -80,9 +106,30 @@ class quantileRegression_chain_disc(quantileRegression_chain):
 
         self.MC['{}_shift'.format(var)] = Y_shift
 
+    def shiftY2D(self,var1,var2,n_jobs=1):
+        
+        features = self.kinrho
+        X = self.MC.loc[:,features]
+        Y = self.MC.loc[:,[var1,var2]]
+
+        if X.isnull().values.any():
+            raise KeyError('Correct {} first!'.format(self.vars[:self.vars.index(var)]))
+
+        Y = Y.values.reshape(-1,2)
+        Z = np.hstack([X,Y])
+        
+        with parallel_backend(self.backend):
+            Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(apply2DShift)(self.TCatclf_mc,self.TCatclf_d,self.tail_clfs_mc_0,self.tail_clfs_mc_1,sli[:,:-2],sli[:,-2:]) for sli in np.array_split(Z,n_jobs)))
+            
+        self.MC['{}_shift'.format(var1)] = Y_shift[:,0]
+        self.MC['{}_shift'.format(var2)] = Y_shift[:,1]
+        
     def correctY(self,var,n_jobs=1,diz=None):
         
-        self.shiftY(var,n_jobs=n_jobs)
+        if len(self.vars)==1:
+            self.shiftY(var,n_jobs=n_jobs)
+        elif len(self.vars)>1 and '{}_shift'.format(var) not in self.MC.columns:
+            self.shiftY2D(var1=self.vars[0],var2=self.vars[1],n_jobs=n_jobs)
         super(quantileRegression_chain_disc, self).correctY('{}_shift'.format(var), n_jobs=n_jobs, diz=True)
 
     def trainOnData(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
