@@ -54,7 +54,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         df['ChIsoCat'] = self.get_class_3Cat(df[var1].values,df[var2].values)
         X = df.loc[:,features].values
         Y = df['ChIsoCat'].values
-        clf = xgb.XGBClassifier(n_estimators=500,learning_rate=0.05,maxDepth=10,gamma=0, n_jobs=n_jobs)
+        clf = xgb.XGBClassifier(n_estimators=500,learning_rate=0.05,maxDepth=10,gamma=0,n_jobs=n_jobs)
         with parallel_backend(self.backend):
             clf.fit(X,Y)
 

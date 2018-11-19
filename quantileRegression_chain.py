@@ -43,10 +43,10 @@ class quantileRegression_chain(object):
 
     def loadROOT(self,path,tree,outname,cut=None,split=None,rsh=True,rndm=12345):
         
-        if 'Data' in tree:
-            df = read_root(path,tree,columns=self.branches)
-        elif self.year == '2016':
+        if self.year == '2016' and 'Data' not in tree:
             df = read_root(path,tree,columns=self.branches+['probePhoIso_corr'])
+        else:
+            df = read_root(path,tree,columns=self.branches)
 
         index = np.array(df.index)
         
@@ -129,12 +129,10 @@ class quantileRegression_chain(object):
 
     def trainOnData(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         
-        print 'Training quantile regressors on data'
         self._trainQuantiles('data',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
         
     def trainOnMC(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         
-        print 'Training quantile regressors on MC'
         self._trainQuantiles('mc',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
 
     def _trainQuantiles(self,key,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
@@ -160,13 +158,16 @@ class quantileRegression_chain(object):
 
         name_key = 'data' if 'data' in key else 'mc'
 
+        print 'Training quantile regrssion on {} for {} with features {}'.format(key,var,features)
+
         with parallel_backend(self.backend):
             Parallel(n_jobs=len(self.quantiles),verbose=20)(delayed(trainClf)(q,maxDepth,minLeaf,X,Y,save=True,outDir='{}/{}'.format(self.workDir,weightsDir),name='{}_weights_{}_{}_{}'.format(name_key,self.EBEE,var,str(q).replace('.','p')),X_names=features,Y_name=var) for q in self.quantiles)
 
         
     def correctY(self, var, n_jobs=1, diz=False):
         
-        features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var[:var.find('_')])]]
+        var_raw = var[:var.find('_')] if '_' in var else var
+        features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var_raw)]]
         X = self.MC.loc[:,features]
         Y = self.MC[var]
         
@@ -181,7 +182,7 @@ class quantileRegression_chain(object):
         with parallel_backend(self.backend):
             Ycorr = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(applyCorrection)(self.clfs_mc,self.clfs_d,ch[:,:-1],ch[:,-1],diz=diz) for ch in np.array_split(Z,n_jobs) ) )
 
-        self.MC['{}_corr'.format(var[:var.find('_')])] = Ycorr
+        self.MC['{}_corr'.format(var_raw)] = Ycorr
 
     def trainAllMC(self,weightsDir,n_jobs=1):
         
@@ -218,7 +219,10 @@ class quantileRegression_chain(object):
          self.computeIdMva(name,weightsEB,weightsEE,key,correctedVariables,tpC,leg2016,n_jobs)
 
     def computeIdMva(self,name,weightsEB,weightsEE,key,correctedVariables,tpC,leg2016,n_jobs):
-        stride = self.MC.index.size / n_jobs
+        if key=='mc':
+            stride = self.MC.index.size / n_jobs
+        elif key=='data':
+            stride = self.data.index.size / n_jobs
         print("Computing %s, correcting %s, stride %s" % (name,correctedVariables,stride) )
         if key == 'mc':
             with parallel_backend(self.backend):

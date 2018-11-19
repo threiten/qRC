@@ -12,39 +12,41 @@ def main(options):
     inp=yaml.load(stream)
 
     dfs = inp['dataframes']
+    variables = inp['variables']
+    year = str(inp['year'])
+    workDir = inp['workDir']
+    weightsDir = inp['weightsDir']
 
-    if options.year == '2017':
+    if year == '2017':
         cols=["mass","probeScEnergy","probeScEta","probePhi","run","weight","weight_clf","rho","probeR9","probeSigmaIeIe","probePhiWidth","probeEtaWidth","probeCovarianceIeIp","probeCovarianceIpIp","probeS4","probePhoIso","probeChIso03","probeChIso03worst","probeSigmaRR","probeScPreshowerEnergy","probePt"]
-    elif options.year == '2016':
+    elif year == '2016':
         cols=["mass","probeScEnergy","probeScEta","probePhi","run","weight","weight_clf","rho","probeR9","probeSigmaIeIe","probePhiWidth","probeEtaWidth","probeCovarianceIetaIphi","probeCovarianceIphiIphi","probeS4","probePhoIso","probeChIso03","probeChIso03worst","probeSigmaRR","probeScPreshowerEnergy","probePt","probePhoIso_corr"]
 
-    qRC = QReg_C.quantileRegression_chain(options.year,options.EBEE,options.workDir)
+    qRC = QReg_C.quantileRegression_chain(year,options.EBEE,workDir,variables)
     qRC.setupJoblib('long_6gb')
-    if inp['ShowerShapes'] is not None:
-        qRC.ShowerShapes = inp['ShowerShapes']
-    qRC.loadMCDF(dfs['mc']['input'],0,options.n_evts)
-    qRC.loadDataDF(dfs['data']['input'],0,options.n_evts)
+    qRC.loadMCDF(dfs['mc_{}'.format(options.EBEE)]['input'],0,options.n_evts)
+    qRC.loadDataDF(dfs['data_{}'.format(options.EBEE)]['input'],0,options.n_evts)
     
     #quantiles = [0.01,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99]
 
 
-    for var in qRC.ShowerShapes:
+    for var in variables:
         correctY_old_parallel(qRC.MC,qRC.data,var,weights='weight_clf',n_jobs=10,backend=qRC.backend)
         # correctY_old_parallel(qr_mc_EE,qr_data_EE,var,weights='weight_clf',n_jobs=10)
-        qRC.loadClfs(var,options.weightsDir)
+        qRC.loadClfs(var,weightsDir)
         qRC.correctY(var,n_jobs=10)
 
-    if options.year == '2017':
+    if year == '2017':
         weights = ("/mnt/t3nfs01/data01/shome/threiten/QReg/ReReco17_data/camp_3_1_0/PhoIdMVAweights/HggPhoId_94X_barrel_BDT_v2.weights.xml","/mnt/t3nfs01/data01/shome/threiten/QReg/ReReco17_data/camp_3_1_0/PhoIdMVAweights/HggPhoId_94X_endcap_BDT_v2.weights.xml")
         leg2016=False
-    elif options.year == '2016':
+    elif year == '2016':
         weights = ("/mnt/t3nfs01/data01/shome/threiten/QReg/ReReco16/PhoIdMVAweights/HggPhoId_barrel_Moriond2017_wRhoRew.weights.xml","/mnt/t3nfs01/data01/shome/threiten/QReg/ReReco16/PhoIdMVAweights/HggPhoId_endcap_Moriond2017_wRhoRew.weights.xml")
         leg2016=True
 
-    mvas = [ ("newPhoID","data",[]), ("newPhoIDcorrShowerShapes","qr",qRC.ShowerShapes), ("newPhoIDcorrSS_old","old",qRC.ShowerShapes)]
+    mvas = [ ("newPhoID","data",[]), ("newPhoIDcorrSS","qr",variables), ("newPhoIDcorrSS_old","old",variables)]
 
     qRC.computeIdMvas( mvas[:1],  weights,'data', n_jobs=10, leg2016=leg2016)
-    qRC.computeIdMvas( mvas, weights,'MC', n_jobs=10 , leg2016=leg2016)
+    qRC.computeIdMvas( mvas, weights,'mc', n_jobs=10 , leg2016=leg2016)
         
     df_backup_mc = qRC.MC.loc[:,['probeChIso03worst','probeChIso03','probePhoIso']]
     df_backup_data = qRC.data.loc[:,['probeChIso03worst','probeChIso03','probePhoIso']]
@@ -57,21 +59,22 @@ def main(options):
         qRC.MC['probeChIso03worst'] = get_const_val(qRC.data['probeChIso03worst'])*np.ones_like(qRC.MC['probeChIso03worst'])
         qRC.MC['probeChIso03'] = np.zeros_like(qRC.MC['probeChIso03'])
         qRC.MC['probePhoIso'] = np.zeros_like(qRC.MC['probePhoIso'])
-        if options.year == '2016':
+        if year == '2016':
             qRC.MC['probePhoIso_corr'] = np.zeros_like(qRC.MC['probePhoIso_corr'])
         qRC.data['probeChIso03worst'] = get_const_val(qRC.data['probeChIso03worst'])*np.ones_like(qRC.data['probeChIso03worst'])
         qRC.data['probeChIso03'] = np.zeros_like(qRC.data['probeChIso03'])
         qRC.data['probePhoIso'] = np.zeros_like(qRC.data['probePhoIso'])
 
-        mvasIsoZ = [ ("newPhoIDIsoZ","data",[]), ("newPhoIDIsoZcorrSS","qr",qRC.ShowerShapes),("newPhoIDIsoZcorrSS_old","old",qRC.ShowerShapes)]
+        mvasIsoZ = [ ("newPhoIDIsoZ","data",[]), ("newPhoIDIsoZcorrSS","qr",variables),("newPhoIDIsoZcorrSS_old","old",variables)]
+        mvas.extend(mvasIsoZ)
         qRC.computeIdMvas( mvasIsoZ[:1],  weights,'data', n_jobs=10, leg2016=leg2016)
-        qRC.computeIdMvas( mvasIsoZ, weights, 'MC',  n_jobs=10 , leg2016=leg2016)
+        qRC.computeIdMvas( mvasIsoZ, weights, 'mc',  n_jobs=10 , leg2016=leg2016)
     
     for var in ['probeChIso03worst','probeChIso03','probePhoIso']:
         qRC.MC[var] = df_backup_mc[var]
         qRC.data[var] = df_backup_data[var]
         
-    for (mva,dmy1,dmy2) in mvas+mvasIsoZ:
+    for (mva,dmy1,dmy2) in mvas:
         if 'IsoZ' in mva:
             qRC.MC[maketr(mva)] = get_quantile(qRC.MC,qRC.data,mva,'newPhoIDIsoZ')
         else:
@@ -80,11 +83,8 @@ def main(options):
     qRC.data['newPhoIDtr'] = get_quantile(qRC.data,qRC.data,'newPhoID','newPhoID')
     qRC.data['newPhoIDtrIsoZ'] = get_quantile(qRC.data,qRC.data,'newPhoIDIsoZ','newPhoIDIsoZ')
 
-
-    outDir = options.outDir
-
-    qRC.MC.to_hdf(outDir+dfs['mc']['output'],'df', mode='w', format='t')
-    qRC.data.to_hdf(outDir+dfs['data']['output'],'df', mode='w', format='t')
+    qRC.MC.to_hdf('{}/{}'.format(workDir,dfs['mc_{}'.format(options.EBEE)]['output']),'df', mode='w', format='t')
+    qRC.data.to_hdf('{}/{}'.format(workDir,dfs['data_{}'.format(options.EBEE)]['output']),'df', mode='w', format='t')
 
 def correctY_old_parallel(df_mc,df_data,var,weights=None,n_jobs=1,backend='loky'):
     
@@ -148,11 +148,7 @@ def maketr(mvast):
 if __name__=="__main__":
      parser=argparse.ArgumentParser()
      requiredArgs = parser.add_argument_group('Required Arguments')
-     requiredArgs.add_argument('-W','--workDir', action='store', type=str,required=True)
-     requiredArgs.add_argument('-D','--outDir', action='store', default='.', type=str,required=True)
      requiredArgs.add_argument('-c','--config', action='store', default='quantile_config.yaml', type=str,required=True)
-     requiredArgs.add_argument('-w','--weightsDir', action='store', default='./weights', type=str,required=True)
-     requiredArgs.add_argument('-y','--year', action='store',type=str,required=True)
      requiredArgs.add_argument('-E','--EBEE', action='store', type=str, required=True)
      requiredArgs.add_argument('-N','--n_evts', action='store', type=int, required=True)
      parser.add_argument('-I','--IsoZ', dest='IsoZ', action='store_true')
