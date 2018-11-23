@@ -9,7 +9,8 @@ from root_pandas import read_root
 
 from joblib import delayed, Parallel, parallel_backend, register_parallel_backend
 
-from IdMVAComputer import IdMvaComputer, helpComputeIdMva 
+from IdMVAComputer import IdMvaComputer, helpComputeIdMva
+from eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
 from Corrector import Corrector, applyCorrection
 #from sklearn.externals.joblib import Parallel, parallel_backend, register_parallel_backend
 
@@ -25,7 +26,7 @@ class quantileRegression_chain(object):
         self.quantiles = [0.01,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99]
         self.backend = 'loky'
         self.EBEE = EBEE
-        self.branches = ['probeScEta','probeEtaWidth','probeR9','weight','probeSigmaRR','tagScPreshowerEnergy','probePass_invEleVeto','tagChIso03','probeChIso03','probeS4','tagR9','tagPhiWidth','probePt','tagSigmaRR','probePhiWidth','probeChIso03worst','puweight','tagEleMatch','tagPhi','probeScEnergy','nvtx','probePhoIso','tagPhoIso','run','tagScEta','probeEleMatch','probeCovarianceIeIp','tagPt','rho','tagS4','tagSigmaIeIe','tagCovarianceIpIp','tagCovarianceIeIp','tagScEnergy','tagChIso03worst','probeSigmaIeIe','probePhi','mass','probeCovarianceIpIp','tagEtaWidth','probeScPreshowerEnergy']
+        self.branches = ['probeScEta','probeEtaWidth','probeR9','weight','probeSigmaRR','tagScPreshowerEnergy','probePass_invEleVeto','tagChIso03','probeChIso03','probeS4','tagR9','tagPhiWidth','probePt','tagSigmaRR','probePhiWidth','probeChIso03worst','puweight','tagEleMatch','tagPhi','probeScEnergy','nvtx','probePhoIso','tagPhoIso','run','tagScEta','probeEleMatch','probeCovarianceIeIp','tagPt','rho','tagS4','tagSigmaIeIe','tagCovarianceIpIp','tagCovarianceIeIp','tagScEnergy','tagChIso03worst','probeSigmaIeIe','probePhi','mass','probeCovarianceIpIp','tagEtaWidth','probeScPreshowerEnergy','probeHoE','probeFull5x5_e1x5','probeFull5x5_e5x5','probeNeutIso']
 
         if year == '2016':
             self.branches = self.branches + ['probePass_invEleVeto','probeCovarianceIetaIphi','probeCovarianceIphiIphi','probeCovarianceIetaIphi','probeCovarianceIphiIphi']
@@ -41,13 +42,14 @@ class quantileRegression_chain(object):
         self.phimin = -3.14
         self.phimax =  3.14
 
-    def loadROOT(self,path,tree,outname,cut=None,split=None,rsh=True,rndm=12345):
+    def loadROOT(self,path,tree,outname,cut=None,split=None,rndm=12345):
         
         if self.year == '2016' and 'Data' not in tree:
             df = read_root(path,tree,columns=self.branches+['probePhoIso_corr'])
         else:
             df = read_root(path,tree,columns=self.branches)
-
+        
+        print 'Dataframe with columns {}'.format(df.columns)
         index = np.array(df.index)
         
         print 'Reshuffling events'
@@ -231,6 +233,26 @@ class quantileRegression_chain(object):
         elif key == 'data':
             with parallel_backend(self.backend):
                 Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeIdMva)(weightsEB,weightsEE,correctedVariables,self.data[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.data.index.size,stride)))
+            self.data[name] = Y
+
+    def computeEleIdMvas(self,mvas,weights,key,n_jobs=1,leg2016=False):
+      weightsEB1,weightsEB2,weightsEE = weights
+      for name,tpC,correctedVariables in mvas:
+         self.computeEleIdMva(name,weightsEB1,weightsEB2,weightsEE,key,correctedVariables,tpC,leg2016,n_jobs)
+
+    def computeEleIdMva(self,name,weightsEB1,weightsEB2,weightsEE,key,correctedVariables,tpC,leg2016,n_jobs):
+        if key=='mc':
+            stride = self.MC.index.size / n_jobs
+        elif key=='data':
+            stride = self.data.index.size / n_jobs
+        print("Computing %s, correcting %s, stride %s" % (name,correctedVariables,stride) )
+        if key == 'mc':
+            with parallel_backend(self.backend):
+                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeEleIdMva)(weightsEB1,weightsEB2,weightsEE,correctedVariables,self.MC[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.MC.index.size,stride)))
+            self.MC[name] = Y
+        elif key == 'data':
+            with parallel_backend(self.backend):
+                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeEleIdMva)(weightsEB1,weightsEB2,weightsEE,correctedVariables,self.data[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.data.index.size,stride)))
             self.data[name] = Y
 
 
