@@ -82,8 +82,9 @@ class quantileRegression_chain_disc(quantileRegression_chain):
             
     def loadTailRegressors(self,varrs,weightsDir):
         
-        self.tail_clfs_mc_0 = [self.load_clf_safe(varrs[0], weightsDir,'mc_weights_tail_{}_{}_{}.pkl'.format(self.EBEE,varrs[0],str(q).replace('.','p')),self.kinrho+[varrs[1]]) for q in self.quantiles]
-        self.tail_clfs_mc_1 = [self.load_clf_safe(varrs[1], weightsDir,'mc_weights_tail_{}_{}_{}.pkl'.format(self.EBEE,varrs[1],str(q).replace('.','p')),self.kinrho+[varrs[0]]) for q in self.quantiles]
+        self.tail_clfs_mc = {}
+        self.tail_clfs_mc[varrs[0]] = [self.load_clf_safe(varrs[0], weightsDir,'mc_weights_tail_{}_{}_{}.pkl'.format(self.EBEE,varrs[0],str(q).replace('.','p')),self.kinrho+[varrs[1]]) for q in self.quantiles]
+        self.tail_clfs_mc[varrs[1]] = [self.load_clf_safe(varrs[1], weightsDir,'mc_weights_tail_{}_{}_{}.pkl'.format(self.EBEE,varrs[1],str(q).replace('.','p')),self.kinrho+[varrs[0]]) for q in self.quantiles]
 
     def loadp0tclf(self,var,weightsDir):
         
@@ -119,7 +120,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         Z = np.hstack([X,Y])
         
         with parallel_backend(self.backend):
-            Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(apply2DShift)(self.TCatclf_mc,self.TCatclf_d,self.tail_clfs_mc_0,self.tail_clfs_mc_1,sli[:,:-2],sli[:,-2:]) for sli in np.array_split(Z,n_jobs)))
+            Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(apply2DShift)(self.TCatclf_mc,self.TCatclf_d,self.tail_clfs_mc[varrs[0]],self.tail_clfs_mc[varrs[1]],sli[:,:-2],sli[:,-2:]) for sli in np.array_split(Z,n_jobs)))
             
         self.MC['{}_shift'.format(var1)] = Y_shift[:,0]
         self.MC['{}_shift'.format(var2)] = Y_shift[:,1]
@@ -141,11 +142,30 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         
         print 'Training quantile regressors on MC'
         self._trainQuantiles('mc_diz',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
-    
-    def trainAllMC(self,weightsDir,n_jobs=1):
 
-        for var in self.vars:
-            self.trainOnMC(var,weightsDir=weightsDir)
-            self.loadp0tclf(var,weightsDir=weightsDir)
-            self.loadClfs(var,weightsDir=weightsDir)
-            self.correctY(var,n_jobs=n_jobs)
+    def trainFinalRegression(self,var,weightsDir,n_jobs=1):
+        super(quantileRegression_chain_disc,self).trainFinalRegression(var,weightsDir,diz=True,n_jobs=n_jobs)
+    
+    def trainFinalTailRegressor(self,var,weightsDir,weightsDirIn,n_jobs=1):
+        
+
+        df = self.MC.query('{}!=0'.format(var))
+
+        if len(self.vars) == 1:
+            self.loadClfs(var,weightsDirIn)
+            df['cdf_{}'.format(var)] = self._getCondCDF(df,self.clfs_mc,self.kinrho,var)
+        elif len(self.vars) > 1:
+            self.loadTailRegressors(self.vars,weightsDirIn)
+            df['cdf_{}'.format(var)] = self._getCondCDF(df,self.tail_clfs_mc[var],self.kinrho+[x for x in self.vars if not x == var],var)
+            
+        features = self.kinrho + [x for x in self.vars if not x == var] + ['cdf_{}'.format(var)]
+        X = df.loc[:,features]
+        Y = df[var]
+        
+        print 'Training final tail regressor with features {} for {}'.format(features,var)
+        clf = xgb.XGBRegressor(n_estimators=1000, maxDepth=10, gamma=0, n_jobs=n_jobs)
+        clf.fit(X,Y)
+
+        name = 'weights_finalTailRegressor_{}_{}'.format(self.EBEE,var)
+        dic = {'clf': clf, 'X': features, 'Y': var}
+        pkl.dump(dic,gzip.open('{}/{}/{}.pkl'.format(self.workDir,weightsDir,name),'wb'),protocol=pkl.HIGHEST_PROTOCOL)

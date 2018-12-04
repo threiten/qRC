@@ -1,7 +1,9 @@
 import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.preprocessing import RobustScaler
 import pandas as pd
 import pickle as pkl
+import xgboost as xgb
 import gzip
 import os
 import ROOT as rt
@@ -139,7 +141,7 @@ class quantileRegression_chain(object):
 
     def _trainQuantiles(self,key,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
 
-        if var not in self.vars+[x+'_shift' for x in self.vars]:
+        if var not in self.vars+['{}_shift'.format(x) for x in self.vars]:
             raise ValueError('{} has to be one of {}'.format(var, self.vars))
         
         if 'diz' in key:
@@ -186,6 +188,47 @@ class quantileRegression_chain(object):
 
         self.MC['{}_corr'.format(var_raw)] = Ycorr
 
+    def trainFinalRegression(self,var,weightsDir,diz=False,n_jobs=1):
+        
+        robSca = RobustScaler()
+        features = self.kinrho + self.vars
+        target = '{}_corr_diff_scale'.format(var)
+
+        if diz:
+            querystr = '{}!=0 and {}_corr!=0'.format(var,var)
+        else:
+            querystr = '{}={}'.format(var,var)
+
+        df = self.MC.query(querystr)
+
+        df['{}_corr_diff_scale'.format(var)] = robSca.fit_transform(df['{}_corr'.format(var)] - df[var])
+        pkl.dump(robSca,gzip.open('{}/{}/scaler_mc_{}_{}_corr_diff.pkl'.format(self.workDir,weightsDir,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
+
+        X = df.loc[:,features].values
+        Y = df[target].values
+
+        clf = xgb.XGBRegressor(n_estimators=1000, maxDepth=10, gamma=0, n_jobs=n_jobs)
+        clf.fit(X,Y)
+
+        name = 'weights_finalRegressor_{}_{}'.format(self.EBEE,var)
+        print 'Saving final regrssion trained with features {} for {} to {}/{}.pkl'.format(features,'{}_corr_diff'.format(var),weightsDir,name)
+        dic = {'clf': clf, 'X': features, 'Y': '{}_corr_diff'.format(var)}
+        pkl.dump(dic,gzip.open('{}/{}/{}.pkl'.format(self.workDir,weightsDir,name),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
+        
+    def loadFinalRegression(self,var,weightsDir):
+        
+        self.finalReg = self.load_clf_safe(var,weightsDir,'weights_finalRegressor_{}_{}.pkl'.format(self.EBEE,var),self.kinrho+self.vars,'{}_corr_diff'.format(var))
+
+    def loadScaler(self,var,weightsDir):
+        
+        self.scaler = pkl.load(gzip.open('{}/{}/scaler_mc_{}_{}_corr_diff.pkl'.format(self.workDir,weightsDir,self.EBEE,var)))
+
+    def applyFinalRegression(self,var):
+        
+        features = self.kinrho + self.vars
+        X = self.MC.loc[:,features].values
+        self.MC['{}_corr_1Reg'.format(var)] = self.MC[var] + self.scaler.inverse_transform(self.finalReg.predict(X))
+        
     def trainAllMC(self,weightsDir,n_jobs=1):
         
         for var in self.vars:
@@ -198,7 +241,7 @@ class quantileRegression_chain(object):
         self.clfs_mc = [self.load_clf_safe(var, weightsDir, 'mc_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
         self.clfs_d = [self.load_clf_safe(var, weightsDir,'data_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
         
-    def load_clf_safe(self,var,weightsDir,name,X_name=None):
+    def load_clf_safe(self,var,weightsDir,name,X_name=None,Y_name=None):
         
         clf = pkl.load(gzip.open('{}/{}/{}'.format(self.workDir,weightsDir,name)))
 
@@ -210,11 +253,40 @@ class quantileRegression_chain(object):
             else:
                 raise NameError('name has to start with data or mc')
            
-        if clf['X'] != X_name or clf['Y'] != var:
-            raise ValueError('{}/{}/{} was not trained with the right order of Variables!'.format(self.workDir,weightsDir,name))
+        if Y_name is None:
+            Y_name=var
+            
+        if clf['X'] != X_name or clf['Y'] != Y_name:
+            raise ValueError('{}/{}/{} was not trained with the right order of Variables! Got {}, stored in file {}'.format(self.workDir,weightsDir,name,X_name,clf['X']))
         else:
             return clf['clf']
+        
+    def _getCondCDF(self,df,clfs,features,var):
+        
+        qtls_names = ['q{}_{}'.format(str(self.quantiles[i]).replace('0.','p'),var) for i in range(len(self.quantiles))]
+        X = df.loc[:,features]
+        if not all(qtls_names) in df.columns:
+            mcqtls = [clf.predict(X) for clf in clfs]
+            for i in range(len(self.quantiles)):
+                df[qtls_names[i]] = mcqtls[i]
 
+        return df.loc[:,[var] +qtls_names].apply(self._getCDFval,1,raw=True)
+        
+    def _getCDFval(self,row):
+        
+        Y = row[0]
+        qtls = np.array(row[1:].values,dtype=float)
+        bins = self.quantiles
+
+        ind = np.searchsorted(qtls,Y)
+
+        if Y<=qtls[0]:
+            return np.random.uniform(0,0.01)
+        elif Y>qtls[-1]:
+            return np.random.uniform(0.99,1)
+
+        return np.interp(Y,qtls[ind-1:ind+1],bins[ind-1:ind+1])
+        
     def computeIdMvas(self,mvas,weights,key,n_jobs=1,leg2016=False):
       weightsEB,weightsEE = weights
       for name,tpC,correctedVariables in mvas:
