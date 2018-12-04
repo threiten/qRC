@@ -83,15 +83,15 @@ class quantileRegression_chain_disc(quantileRegression_chain):
     def loadTailRegressors(self,varrs,weightsDir):
         
         self.tail_clfs_mc = {}
-        self.tail_clfs_mc[varrs[0]] = [self.load_clf_safe(varrs[0], weightsDir,'mc_weights_tail_{}_{}_{}.pkl'.format(self.EBEE,varrs[0],str(q).replace('.','p')),self.kinrho+[varrs[1]]) for q in self.quantiles]
-        self.tail_clfs_mc[varrs[1]] = [self.load_clf_safe(varrs[1], weightsDir,'mc_weights_tail_{}_{}_{}.pkl'.format(self.EBEE,varrs[1],str(q).replace('.','p')),self.kinrho+[varrs[0]]) for q in self.quantiles]
+        for var in varrs:
+            self.tail_clfs_mc[var] = [self.load_clf_safe(var, weightsDir,'mc_weights_tail_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p')),self.kinrho+[var]) for q in self.quantiles]
 
     def loadp0tclf(self,var,weightsDir):
         
         self.p0tclf_mc = self.load_clf_safe(var, weightsDir,'mc_clf_p0t_{}_{}.pkl'.format(self.EBEE,var))
         self.p0tclf_d = self.load_clf_safe(var, weightsDir,'data_clf_p0t_{}_{}.pkl'.format(self.EBEE,var))
 
-    def shiftY(self,var,n_jobs=1):
+    def shiftY(self,var,finalReg=False,n_jobs=1):
         
         features = self.kinrho
         X = self.MC.loc[:,features]
@@ -102,12 +102,17 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         
         print 'Shifting {} with input features {}'.format(var,features)
 
-        with parallel_backend(self.backend):
-            Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(applyShift)(self.p0tclf_mc,self.p0tclf_d,self.clfs_mc,sli[:,:-1],sli[:,-1]) for sli in np.array_split(Z,n_jobs)))
+        if finalReg:
+            with parallel_backend(self.backend):
+                Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(applyShift)(self.p0tclf_mc,self.p0tclf_d,[self.finalTailRegs[var]],sli[:,:-1],sli[:,-1]) for sli in np.array_split(Z,n_jobs)))
+            self.MC['{}_shift_final'.format(var)] = Y_shift
+        else:
+            with parallel_backend(self.backend):
+                Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(applyShift)(self.p0tclf_mc,self.p0tclf_d,self.clfs_mc,sli[:,:-1],sli[:,-1]) for sli in np.array_split(Z,n_jobs)))
+            self.MC['{}_shift'.format(var)] = Y_shift
 
-        self.MC['{}_shift'.format(var)] = Y_shift
 
-    def shiftY2D(self,var1,var2,n_jobs=1):
+    def shiftY2D(self,var1,var2,finalReg=False,n_jobs=1):
         
         features = self.kinrho
         X = self.MC.loc[:,features]
@@ -119,11 +124,17 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         Y = Y.values.reshape(-1,2)
         Z = np.hstack([X,Y])
         
-        with parallel_backend(self.backend):
-            Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(apply2DShift)(self.TCatclf_mc,self.TCatclf_d,self.tail_clfs_mc[varrs[0]],self.tail_clfs_mc[varrs[1]],sli[:,:-2],sli[:,-2:]) for sli in np.array_split(Z,n_jobs)))
-            
-        self.MC['{}_shift'.format(var1)] = Y_shift[:,0]
-        self.MC['{}_shift'.format(var2)] = Y_shift[:,1]
+        if finalReg:
+            with parallel_backend(self.backend):
+                Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(apply2DShift)(self.TCatclf_mc,self.TCatclf_d,[self.finalTailRegs[varrs[0]]],[self.finalTailRegs[varrs[1]]],sli[:,:-2],sli[:,-2:]) for sli in np.array_split(Z,n_jobs)))
+            self.MC['{}_shift_final'.format(var1)] = Y_shift[:,0]
+            self.MC['{}_shift_final'.format(var2)] = Y_shift[:,1]
+        else:
+            with parallel_backend(self.backend):
+                Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(apply2DShift)(self.TCatclf_mc,self.TCatclf_d,self.tail_clfs_mc[varrs[0]],self.tail_clfs_mc[varrs[1]],sli[:,:-2],sli[:,-2:]) for sli in np.array_split(Z,n_jobs)))
+            self.MC['{}_shift'.format(var1)] = Y_shift[:,0]
+            self.MC['{}_shift'.format(var2)] = Y_shift[:,1]    
+        
         
     def correctY(self,var,n_jobs=1,diz=None):
         
@@ -132,6 +143,14 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         elif len(self.vars)>1 and '{}_shift'.format(var) not in self.MC.columns:
             self.shiftY2D(var1=self.vars[0],var2=self.vars[1],n_jobs=n_jobs)
         super(quantileRegression_chain_disc, self).correctY('{}_shift'.format(var), n_jobs=n_jobs, diz=True)
+
+    def applyFinalRegression(self,var,n_jobs=1):
+        
+        if len(self.vars)==1:
+            self.shiftY(var,finalReg=True,n_jobs=n_jobs)
+        elif len(self.vars)>1 and '{}_shift_final'.format(var) not in self.MC.columns:
+            self.shiftY2D(var1=self.vars[0],var2=self.vars[1],finalReg=True,n_jobs=n_jobs)
+        super(quantileRegression_chain_disc, self).applyFinalRegression('{}_shift_final'.format(var), diz=True)
 
     def trainOnData(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         
@@ -159,8 +178,8 @@ class quantileRegression_chain_disc(quantileRegression_chain):
             df['cdf_{}'.format(var)] = self._getCondCDF(df,self.tail_clfs_mc[var],self.kinrho+[x for x in self.vars if not x == var],var)
             
         features = self.kinrho + [x for x in self.vars if not x == var] + ['cdf_{}'.format(var)]
-        X = df.loc[:,features]
-        Y = df[var]
+        X = df.loc[:,features].values
+        Y = df[var].values
         
         print 'Training final tail regressor with features {} for {}'.format(features,var)
         clf = xgb.XGBRegressor(n_estimators=1000, maxDepth=10, gamma=0, n_jobs=n_jobs)
@@ -169,3 +188,11 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         name = 'weights_finalTailRegressor_{}_{}'.format(self.EBEE,var)
         dic = {'clf': clf, 'X': features, 'Y': var}
         pkl.dump(dic,gzip.open('{}/{}/{}.pkl'.format(self.workDir,weightsDir,name),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
+
+    def loadFinalTailRegressor(self,varrs,weightsDir):
+        
+        if not type(varrs) is list:
+            list(varrs)
+        self.finalTailRegs = {}
+        for var in varrs:
+            self.finalTailRegs[var] = self.load_clf_safe(var,weightsDir,'weights_finalTailRegressor_{}_{}.pkl'.format(self.EBEE,var),self.kinrho+[x for x in varrs if not x == var]+['cdf_{}'.format(var)],var)

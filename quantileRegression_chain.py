@@ -201,7 +201,7 @@ class quantileRegression_chain(object):
 
         df = self.MC.query(querystr)
 
-        df['{}_corr_diff_scale'.format(var)] = robSca.fit_transform(df['{}_corr'.format(var)] - df[var])
+        df['{}_corr_diff_scale'.format(var)] = robSca.fit_transform(np.array(df['{}_corr'.format(var)] - df[var]).reshape(-1,1))
         pkl.dump(robSca,gzip.open('{}/{}/scaler_mc_{}_{}_corr_diff.pkl'.format(self.workDir,weightsDir,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
 
         X = df.loc[:,features].values
@@ -211,23 +211,27 @@ class quantileRegression_chain(object):
         clf.fit(X,Y)
 
         name = 'weights_finalRegressor_{}_{}'.format(self.EBEE,var)
-        print 'Saving final regrssion trained with features {} for {} to {}/{}.pkl'.format(features,'{}_corr_diff'.format(var),weightsDir,name)
-        dic = {'clf': clf, 'X': features, 'Y': '{}_corr_diff'.format(var)}
+        print 'Saving final regrssion trained with features {} for {} to {}/{}.pkl'.format(features,'{}_corr_diff_scale'.format(var),weightsDir,name)
+        dic = {'clf': clf, 'X': features, 'Y': '{}_corr_diff_scale'.format(var)}
         pkl.dump(dic,gzip.open('{}/{}/{}.pkl'.format(self.workDir,weightsDir,name),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
         
     def loadFinalRegression(self,var,weightsDir):
         
-        self.finalReg = self.load_clf_safe(var,weightsDir,'weights_finalRegressor_{}_{}.pkl'.format(self.EBEE,var),self.kinrho+self.vars,'{}_corr_diff'.format(var))
+        self.finalReg = self.load_clf_safe(var,weightsDir,'weights_finalRegressor_{}_{}.pkl'.format(self.EBEE,var),self.kinrho+self.vars,'{}_corr_diff_scale'.format(var))
 
     def loadScaler(self,var,weightsDir):
         
         self.scaler = pkl.load(gzip.open('{}/{}/scaler_mc_{}_{}_corr_diff.pkl'.format(self.workDir,weightsDir,self.EBEE,var)))
 
-    def applyFinalRegression(self,var):
+    def applyFinalRegression(self,var,diz=False):
         
         features = self.kinrho + self.vars
-        X = self.MC.loc[:,features].values
-        self.MC['{}_corr_1Reg'.format(var)] = self.MC[var] + self.scaler.inverse_transform(self.finalReg.predict(X))
+        if diz:
+            X = self.MC.query('{}!=0'.format(var)).loc[:,features].values
+            self.MC.query('{}!=0'.format(var)).loc[:,'{}_corr_1Reg'.format(var)] = self.MC.query('{}!=0'.format(var)).loc[:,var] + self.scaler.inverse_transform(self.finalReg.predict(X))
+        else:
+            X = self.MC.loc[:,features].values
+            self.MC['{}_corr_1Reg'.format(var)] = self.MC[var] + self.scaler.inverse_transform(self.finalReg.predict(X))
         
     def trainAllMC(self,weightsDir,n_jobs=1):
         

@@ -14,8 +14,18 @@ class Shifter2D:
         self.p01_data = proba_data_clf[:,1]
         self.p11_data = proba_data_clf[:,2]
         
-        self.mcqtls0 = np.array([clf.predict(np.hstack((X,Y[:,1].reshape(-1,1)))) for clf in mcqclf0])
-        self.mcqtls1 = np.array([clf.predict(np.hstack((X,Y[:,0].reshape(-1,1)))) for clf in mcqclf1])
+        if len(mcqclf0)>1 and len(mcqclf1)>1:
+            self.mcqtls0 = np.array([clf.predict(np.hstack((X,Y[:,1].reshape(-1,1)))) for clf in mcqclf0])
+            self.mcqtls1 = np.array([clf.predict(np.hstack((X,Y[:,0].reshape(-1,1)))) for clf in mcqclf1])
+            self.tailReg0 = None
+            self.tailReg1 = None
+
+        elif len(mcqclf0) == 1 and len(mcqclf1) == 1:
+            self.tailReg0 = mcqclf0[0]
+            self.tailReg1 = mcqclf1[0]
+            self.X = X
+            self.mcqtls0 = None
+            self.mcqtls1 = None
 
         self.Y = Y
         
@@ -75,11 +85,15 @@ class Shifter2D:
         r=np.random.uniform(0.01+epsilon,0.99)
         p=np.random.uniform(0.01+epsilon,0.99)
         bins = np.hstack(([0.01],np.linspace(0.05,0.95,19),[0.99]))
+        
+        if self.mcqtls0 is not None and self.mcqtls1 is not None:
+            indqr = np.searchsorted(bins,r)
+            indqp = np.searchsorted(bins,p)
+            y_tail = np.array([np.interp(r,bins[indqr-1:indqr+1],[self.mcqtls0[indqr-1,iev],self.mcqtls0[indqr,iev]]),np.interp(p,bins[indqp-1:indqp+1],[self.mcqtls1[indqp-1,iev],self.mcqtls1[indqp,iev]])])
 
-        indqr = np.searchsorted(bins,r)
-        indqp = np.searchsorted(bins,p)
-
-        y_tail = np.array([np.interp(r,bins[indqr-1:indqr+1],[self.mcqtls0[indqr-1,iev],self.mcqtls0[indqr,iev]]),np.interp(p,bins[indqp-1:indqp+1],[self.mcqtls1[indqp-1,iev],self.mcqtls1[indqp,iev]])])
+        elif self.tailReg0 is not None and self.tailReg1 is not None:
+            y_tail = np.array([self.tailReg0.predict(np.hstack((self.X[iev],self.Y[iev][1],r)).reshape(1,-1))],[self.tailReg1.predict(np.hstack((self.X[iev],self.Y[iev][0],p)).reshape(1,-1))])
+            
         return y_tail
 
     def __call__(self):
