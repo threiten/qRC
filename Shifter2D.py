@@ -92,7 +92,7 @@ class Shifter2D:
             y_tail = np.array([np.interp(r,bins[indqr-1:indqr+1],[self.mcqtls0[indqr-1,iev],self.mcqtls0[indqr,iev]]),np.interp(p,bins[indqp-1:indqp+1],[self.mcqtls1[indqp-1,iev],self.mcqtls1[indqp,iev]])])
 
         elif self.tailReg0 is not None and self.tailReg1 is not None:
-            y_tail = np.array([self.tailReg0.predict(np.hstack((self.X[iev],self.Y[iev][1],r)).reshape(1,-1))],[self.tailReg1.predict(np.hstack((self.X[iev],self.Y[iev][0],p)).reshape(1,-1))])
+            y_tail = np.hstack((self.tailReg0.predict(np.hstack((self.X[iev],self.Y[iev][1],r)).reshape(1,-1)),self.tailReg1.predict(np.hstack((self.X[iev],self.Y[iev][0],p)).reshape(1,-1))))
             
         return y_tail
 

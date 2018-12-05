@@ -225,10 +225,12 @@ class quantileRegression_chain(object):
 
     def applyFinalRegression(self,var,diz=False):
         
+        var_raw = var[:var.find('_')] if '_' in var else var
         features = self.kinrho + self.vars
         if diz:
-            X = self.MC.query('{}!=0'.format(var)).loc[:,features].values
-            self.MC.query('{}!=0'.format(var)).loc[:,'{}_corr_1Reg'.format(var)] = self.MC.query('{}!=0'.format(var)).loc[:,var] + self.scaler.inverse_transform(self.finalReg.predict(X))
+            X = self.MC.loc[self.MC[var] != 0,features].values
+            self.MC.loc[self.MC[var] != 0,'{}_corr_1Reg'.format(var_raw)] = self.MC.loc[self.MC[var] != 0,var] + self.scaler.inverse_transform(self.finalReg.predict(X))
+            self.MC.loc[self.MC[var] == 0,'{}_corr_1Reg'.format(var_raw)] = 0
         else:
             X = self.MC.loc[:,features].values
             self.MC['{}_corr_1Reg'.format(var)] = self.MC[var] + self.scaler.inverse_transform(self.finalReg.predict(X))
