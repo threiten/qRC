@@ -59,19 +59,19 @@ class quantileRegression_chain(object):
         np.random.shuffle(index)
         df = df.ix[index]
 
-        df = df.query('probePt>@self.ptmin and probePt<@self.ptmax and probeScEta>@self.etamin and probeScEta<@self.etamax and probePhi>@self.phimin and probePhi<@self.phimax')
+        df.query('probePt>@self.ptmin and probePt<@self.ptmax and probeScEta>@self.etamin and probeScEta<@self.etamax and probePhi>@self.phimin and probePhi<@self.phimax',inplace=True)
 
         if self.EBEE == 'EB':
             print 'Selecting events from EB'
-            df = df.query('probeScEta>-1.4442 and probeScEta<1.4442')
+            df.query('probeScEta>-1.4442 and probeScEta<1.4442',inplace=True)
         elif self.EBEE == 'EE':
             print 'Selecting events from EE'
-            df = df.query('probeScEta<-1.556 or probeScEta>1.556')
+            df.query('probeScEta<-1.556 or probeScEta>1.556',inplace=True)
         
         
         if cut is not None:
             print 'Applying cut {}'.format(cut)
-            df = df.query(cut)
+            df.query(cut,inplace=True)
         
         df.reset_index(drop=True, inplace=True)
 
@@ -111,11 +111,11 @@ class quantileRegression_chain(object):
 
         df = df[start:stop]
 
-        if self.EBEE == 'EB':
-            df = df.query('probeScEta>-1.4442 and probeScEta<1.4442')
-        elif self.EBEE == 'EE':
-            df = df.query('probeScEta<-1.556 or probeScEta>1.556')
-
+        if self.EBEE == 'EB' and df[abs(df['probeScEta']>1.4442)].index.size>0:
+            df.query('probeScEta>-1.4442 and probeScEta<1.4442',inplace=True)
+        elif self.EBEE == 'EE' and df[abs(df['probeScEta']<1.556)].index.size>0:
+            df.query('probeScEta<-1.556 or probeScEta>1.556',inplace=True)
+        
         if df.index.size==0:
             raise ValueError('Wrong dataframe selected!')
 
@@ -144,19 +144,28 @@ class quantileRegression_chain(object):
         if var not in self.vars+['{}_shift'.format(x) for x in self.vars]:
             raise ValueError('{} has to be one of {}'.format(var, self.vars))
         
-        if 'diz' in key:
-            querystr = '{}!=0'.format(var)
-        else:
-            querystr = '{}=={}'.format(var,var)
+        # if 'diz' in key:
+        #     querystr = '{}!=0'.format(var)
+        # else:
+        #     querystr = '{0}=={0}'.format(var)
 
         if key.startswith('mc'):
             features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
-            X = self.MC.query(querystr).loc[:,features]
-            Y = self.MC.query(querystr)[var]
+            if 'diz' in key:
+                X = self.MC.loc[self.MC[var]!=0,features]
+                Y = self.MC.loc[self.MC[var]!=0,var]
+            else:
+                X = self.MC.loc[:,features]
+                Y = self.MC.loc[:,var]
+
         elif key.startswith('data'):
             features = self.kinrho + self.vars[:self.vars.index(var)]
-            X = self.data.query(querystr).loc[:,features]
-            Y = self.data.query(querystr)[var]
+            if 'diz' in key:
+                X = self.data.loc[self.data[var]!=0,features]
+                Y = self.data.loc[self.data[var]!=0,var]
+            else:
+                X = self.data.loc[:,features]
+                Y = self.data.loc[:,var]
         else:
             raise KeyError('Key needs to specify if data or mc')
 
@@ -197,7 +206,7 @@ class quantileRegression_chain(object):
         if diz:
             querystr = '{}!=0 and {}_corr!=0'.format(var,var)
         else:
-            querystr = '{}={}'.format(var,var)
+            querystr = '{}=={}'.format(var,var)
 
         df = self.MC.query(querystr)
 
@@ -207,7 +216,7 @@ class quantileRegression_chain(object):
         X = df.loc[:,features].values
         Y = df[target].values
 
-        clf = xgb.XGBRegressor(n_estimators=1000, maxDepth=10, gamma=0, n_jobs=n_jobs)
+        clf = xgb.XGBRegressor(n_estimators=1000, maxDepth=10, gamma=0, n_jobs=n_jobs, base_score=0.)
         clf.fit(X,Y)
 
         name = 'weights_finalRegressor_{}_{}'.format(self.EBEE,var)

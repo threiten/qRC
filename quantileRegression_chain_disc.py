@@ -192,7 +192,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
     def loadFinalTailRegressor(self,varrs,weightsDir):
         
         if not type(varrs) is list:
-            list(varrs)
+            varrs = list((varrs,))
         self.finalTailRegs = {}
         for var in varrs:
             self.finalTailRegs[var] = self.load_clf_safe(var,weightsDir,'weights_finalTailRegressor_{}_{}.pkl'.format(self.EBEE,var),self.kinrho+[x for x in varrs if not x == var]+['cdf_{}'.format(var)],var)
