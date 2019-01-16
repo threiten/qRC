@@ -54,7 +54,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         df['ChIsoCat'] = self.get_class_3Cat(df[var1].values,df[var2].values)
         X = df.loc[:,features].values
         Y = df['ChIsoCat'].values
-        clf = xgb.XGBClassifier(n_estimators=500,learning_rate=0.05,maxDepth=10,gamma=0,n_jobs=n_jobs)
+        clf = xgb.XGBClassifier(n_estimators=500, learning_rate=0.05, maxDepth=10,gamma=0, n_jobs=n_jobs)
         with parallel_backend(self.backend):
             clf.fit(X,Y)
 
@@ -79,7 +79,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         
         with parallel_backend(self.backend):
             Parallel(n_jobs=len(self.quantiles),verbose=20)(delayed(trainClf)(q,5,500,X,Y,save=True,outDir='{}/{}'.format(self.workDir,weightsDir),name='mc_weights_tail_{}_{}_{}'.format(self.EBEE,var,str(q).replace('.','p')),X_names=features,Y_name=var) for q in self.quantiles)
-            
+        
     def loadTailRegressors(self,varrs,weightsDir):
         
         self.tail_clfs_mc = {}
@@ -182,7 +182,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         Y = df[var].values
         
         print 'Training final tail regressor with features {} for {}'.format(features,var)
-        clf = xgb.XGBRegressor(n_estimators=1000, maxDepth=10, gamma=0, n_jobs=n_jobs)
+        clf = xgb.XGBRegressor(n_estimators=1000, maxDepth=10, gamma=0, n_jobs=n_jobs, base_score=0.)
         clf.fit(X,Y)
 
         name = 'weights_finalTailRegressor_{}_{}'.format(self.EBEE,var)

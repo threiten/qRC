@@ -4,13 +4,13 @@ import ROOT as rt
 
 class computeCorrection_tmva_Iso:
 
-    def __init__(self,scl_center,scl_iqr,weightsFinalReg,weightsTailReg,weightsDataClf,weightsMcClf,leg2016=False):
+    def __init__(self,scl_center,scl_iqr,weightsFinalReg,weightsFinalTailReg,weightsDataClf,weightsMcClf,leg2016=False):
     
         rt.gROOT.LoadMacro("/mnt/t3nfs01/data01/shome/threiten/QReg/qRC/qRC_xmlReader_PhoIso.C")
       
-        self.X = rt.qRC_Input()
+        self.X = rt.qRC_Input_Iso()
         self.readerFinalReg = rt.bookReaderFinalReg(weightsFinalReg, self.X)
-        self.readerTailReg = rt.bookReaderTailReg(weightsTailReg, self.X)
+        self.readerTailReg = rt.bookReaderTailReg(weightsFinalTailReg, self.X)
         self.readerDataClf = rt.bookReaderDataClf(weightsDataClf, self.X)
         self.readerMcClf = rt.bookReaderMcClf(weightsMcClf,self.X)
         self.scl_center=scl_center
@@ -20,12 +20,12 @@ class computeCorrection_tmva_Iso:
         
         r=np.random.uniform()
         
-        pPeak_data=(self.readerDataClf.EvaluateMVA("dataClf"))/2
-        pPeak_mc=(self.readerMcClf.EvaluateMVA("mcClf")+1)/2
+        pPeak_data=((self.readerDataClf.EvaluateMVA("dataClf")+1)/2)+0.5
+        pPeak_mc=((self.readerMcClf.EvaluateMVA("mcClf")+1)/2)+0.5
 
         drats=[]
-        drats[0]=((1-pPeak_data)-(1-pPeak_mc))/pPeak_mc
-        drats[1]=((pPeak_data)-(pPeak_mc))/(1-pPeak_mc)
+        drats.append(((1-pPeak_data)-(1-pPeak_mc))/pPeak_mc)
+        drats.append(((pPeak_data)-(pPeak_mc))/(1-pPeak_mc))
         
         if self.X.qRC_Input_phoIso_ == 0. and (1-pPeak_data)>(1-pPeak_mc) and r<drats[0]:
             shifted = self.p2t()
@@ -55,4 +55,9 @@ class computeCorrection_tmva_Iso:
         elif shifted > 0.:
             return shifted + self.scl_iqr*self.readerFinalReg.EvaluateRegression("finalReg")+self.scl_center
 
-
+def applyFinalRegressionsIso_tmva(var,df,scaler,weightsFinalReg,weightsFinalTailReg,weightsDataClf,weightsMcClf,leg2016):
+    
+    columns = ["probePt","probeScEta","probePhi","rho","probePhoIso"]
+    row=df[columns].values
+    correction = np.apply_along_axis(computeCorrection_tmva_Iso(scaler.center_[0],scaler.scale_[0],weightsFinalReg,weightsFinalTailReg,weightsDataClf,weightsMcClf,leg2016),1,row)
+    df['{}_corr_tmva'.format(var)] = correction.ravel()
