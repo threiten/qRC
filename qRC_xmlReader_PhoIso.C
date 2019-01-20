@@ -56,34 +56,18 @@ TMVA::Reader* bookReaderTailReg(const string &xmlfilename, qRC_Input_Iso &inp){
   return qRCReader_tailReg;
 }
 
-TMVA::Reader* bookReaderDataClf(const string &xmlfilename, qRC_Input_Iso &inp){
+TMVA::Reader* bookReaderpotClf(const string &xmlfilename, qRC_Input_Iso &inp){
 
-  string mvaNameDataClf = "dataClf";
+  string mvaNameClf = "potClf";
   
-  TMVA::Reader* qRCReader_dataClf = new TMVA::Reader( "!Color:Silent" );
+  TMVA::Reader* qRCReader_potClf = new TMVA::Reader( "!Color:Silent" );
   
-  qRCReader_dataClf->AddVariable( "f0", &inp.qRC_Input_pt_ );
-  qRCReader_dataClf->AddVariable( "f1", &inp.qRC_Input_ScEta_ );
-  qRCReader_dataClf->AddVariable( "f2", &inp.qRC_Input_Phi_ );
-  qRCReader_dataClf->AddVariable( "f3", &inp.qRC_Input_rho_ );
+  qRCReader_potClf->AddVariable( "f0", &inp.qRC_Input_pt_ );
+  qRCReader_potClf->AddVariable( "f1", &inp.qRC_Input_ScEta_ );
+  qRCReader_potClf->AddVariable( "f2", &inp.qRC_Input_Phi_ );
+  qRCReader_potClf->AddVariable( "f3", &inp.qRC_Input_rho_ );
 
-  qRCReader_dataClf->BookMVA( mvaNameDataClf.c_str(), xmlfilename );
+  qRCReader_potClf->BookMVA( mvaNameClf.c_str(), xmlfilename );
 
-  return qRCReader_dataClf;
-}
-
-TMVA::Reader* bookReaderMcClf(const string &xmlfilename, qRC_Input_Iso &inp){
-
-  string mvaNameMcClf = "mcClf";
-  
-  TMVA::Reader* qRCReader_mcClf = new TMVA::Reader( "!Color:Silent" );
-  
-  qRCReader_mcClf->AddVariable( "f0", &inp.qRC_Input_pt_ );
-  qRCReader_mcClf->AddVariable( "f1", &inp.qRC_Input_ScEta_ );
-  qRCReader_mcClf->AddVariable( "f2", &inp.qRC_Input_Phi_ );
-  qRCReader_mcClf->AddVariable( "f3", &inp.qRC_Input_rho_ );
-
-  qRCReader_mcClf->BookMVA( mvaNameMcClf.c_str(), xmlfilename );
-
-  return qRCReader_mcClf;
+  return qRCReader_potClf;
 }

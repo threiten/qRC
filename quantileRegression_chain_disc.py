@@ -131,7 +131,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
             self.MC['{}_shift_final'.format(var2)] = Y_shift[:,1]
         else:
             with parallel_backend(self.backend):
-                Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(apply2DShift)(self.TCatclf_mc,self.TCatclf_d,self.tail_clfs_mc[var0],self.tail_clfs_mc[var1],sli[:,:-2],sli[:,-2:]) for sli in np.array_split(Z,n_jobs)))
+                Y_shift = np.concatenate(Parallel(n_jobs=n_jobs, verbose=20)(delayed(apply2DShift)(self.TCatclf_mc,self.TCatclf_d,self.tail_clfs_mc[var1],self.tail_clfs_mc[var2],sli[:,:-2],sli[:,-2:]) for sli in np.array_split(Z,n_jobs)))
             self.MC['{}_shift'.format(var1)] = Y_shift[:,0]
             self.MC['{}_shift'.format(var2)] = Y_shift[:,1]    
         
