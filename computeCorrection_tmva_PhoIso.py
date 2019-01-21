@@ -39,7 +39,7 @@ class computeCorrection_tmva_Iso:
 
     def p2t(self):
         
-        return self.readerTailReg.EvaluateRegression("tailReg")
+        return self.readerTailReg.EvaluateRegression("tailReg")[0]
         
     def __call__(self,row):
 
@@ -51,11 +51,11 @@ class computeCorrection_tmva_Iso:
         # Conditional CDF from quantileRegression with first quantile 0.01 and last quantile 0.99
         self.X.qRC_Input_rand01_ = np.random.uniform(0.01,0.99)
 
-        self.X.qRC_Input_phoIso_ = self.shiftY()
+        self.X.qRC_Input_phoIso_ = float(self.shiftY())
         if self.X.qRC_Input_phoIso_ == 0.:
             return self.X.qRC_Input_phoIso_
         elif self.X.qRC_Input_phoIso_ > 0.:
-            return self.X.qRC_Input_phoIso_ + self.scl_iqr*self.readerFinalReg.EvaluateRegression("finalReg")+self.scl_center
+            return self.X.qRC_Input_phoIso_ + self.scl_iqr*self.readerFinalReg.EvaluateRegression("finalReg")[0]+self.scl_center
 
 def applyFinalRegressionsIso_tmva(var,df,scaler,weightsFinalReg,weightsFinalTailReg,weightsDataClf,weightsMcClf,leg2016):
     

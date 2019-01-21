@@ -23,13 +23,15 @@ class computeCorrection_tmva_ChIso:
         r=np.random.uniform()
         p=np.random.uniform()
         
-        p00_mc = self.readerMcClf.EvaluateMulticlass("3CatClf")[0]
-        p01_mc = self.readerMcClf.EvaluateMulticlass("3CatClf")[1]
-        p11_mc = self.readerMcClf.EvaluateMulticlass("3CatClf")[2]
+        p_mc = self.readerMcClf.EvaluateMulticlass("3CatClf")
+        p00_mc = p_mc[0]
+        p01_mc = p_mc[1]
+        p11_mc = p_mc[2]
 
-        p00_data = self.readerDataClf.EvaluateMulticlass("3CatClf")[0]
-        p01_data = self.readerDataClf.EvaluateMulticlass("3CatClf")[1]
-        p11_data = self.readerDataClf.EvaluateMulticlass("3CatClf")[2]
+        p_data = self.readerDataClf.EvaluateMulticlass("3CatClf")
+        p00_data = p_data[0]
+        p01_data = p_data[1]
+        p11_data = p_data[2]
 
         if self.X.qRC_Input_chIso03_ == 0. and self.X.qRC_Input_chIso03worst_ == 0. and p00_mc > p00_data and r<=self.w(p00_mc,p00_data):
             if p01_mc<p01_data and p11_mc>p11_data:
@@ -71,7 +73,7 @@ class computeCorrection_tmva_ChIso:
 
     def p2t(self):
         
-        return np.array([self.readerTailRegChI.EvaluateRegression("tailReg"),self.readerTailRegChIW.EvaluateRegression("tailReg")])
+        return np.array([self.readerTailRegChI.EvaluateRegression("tailReg")[0],self.readerTailRegChIW.EvaluateRegression("tailReg")[0]])
  
     def w(self,p_mc,p_data):
         return 1.-np.divide(p_data,p_mc)
@@ -96,11 +98,11 @@ class computeCorrection_tmva_ChIso:
         if self.X.qRC_Input_chIso03_ == 0. and self.X.qRC_Input_chIso03worst_ == 0.:
             return self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_
         elif self.X.qRC_Input_chIso03_ == 0. and self.X.qRC_Input_chIso03worst_ > 0.:
-            return self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_ + self.readerFinalRegChIW.EvaluateRegression("finalReg")*self.scl_iqrs[1] + self.scl_centers[1]
+            return self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_ + self.readerFinalRegChIW.EvaluateRegression("finalReg")[0]*self.scl_iqrs[1] + self.scl_centers[1]
         elif self.X.qRC_Input_chIso03_ > 0. and self.X.qRC_Input_chIso03worst_ > 0.:
-            return self.X.qRC_Input_chIso03_ + self.readerFinalRegChI.EvaluateRegression("finalReg")*self.scl_iqrs[0] + self.scl_centers[0], self.X.qRC_Input_chIso03worst_ + self.readerFinalRegChIW.EvaluateRegression("finalReg")*self.scl_iqrs[1] + self.scl_centers[1]
+            return self.X.qRC_Input_chIso03_ + self.readerFinalRegChI.EvaluateRegression("finalReg")[0]*self.scl_iqrs[0] + self.scl_centers[0], self.X.qRC_Input_chIso03worst_ + self.readerFinalRegChIW.EvaluateRegression("finalReg")[0]*self.scl_iqrs[1] + self.scl_centers[1]
 
-        def applyCorrection_tmva_ChIso(df,scalerChI,scalerChIW,weightsFinalRegChI,weightsFinalRegChIW,weightsFinalTailRegChI,weightsFinalTailRegChIW,weightsDataClf,weightsMcClf,leg2016):
+def applyCorrection_tmva_ChIso(df,scalerChI,scalerChIW,weightsFinalRegChI,weightsFinalRegChIW,weightsFinalTailRegChI,weightsFinalTailRegChIW,weightsDataClf,weightsMcClf,leg2016):
 
     columns = ["probePt","probeScEta","probePhi","rho","probeChIso03","probeChIso03worst"]
     row = df[columns].values
