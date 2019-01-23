@@ -69,11 +69,13 @@ class computeCorrection_tmva_ChIso:
         else:
             shifted = np.array([self.X.qRC_Input_chIso03_,self.X.qRC_Input_chIso03worst_])
 
+        #print 'Output self.shifted: ', shifted
         return shifted
 
     def p2t(self):
         
-        return np.array([self.readerTailRegChI.EvaluateRegression("tailReg")[0],self.readerTailRegChIW.EvaluateRegression("tailReg")[0]])
+        #print 'Peak to Tail called'
+        return np.array([self.readerTailRegChI.EvaluateRegression("tailReg")[0]+0.5,self.readerTailRegChIW.EvaluateRegression("tailReg")[0]+0.5])
  
     def w(self,p_mc,p_data):
         return 1.-np.divide(p_data,p_mc)
@@ -91,20 +93,23 @@ class computeCorrection_tmva_ChIso:
         self.X.qRC_Input_chIso03worst_=row[5]
         # Conditional CDF from quantileRegression with first quantile 0.01 and last quantile 0.99
         self.X.qRC_Input_rand01_ = np.random.uniform(0.01,0.99)
-
+        #print 'Input: ', self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_
         
         self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_ = self.shiftY()
+        #print 'Shifted: ', self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_, '\n'
 
         if self.X.qRC_Input_chIso03_ == 0. and self.X.qRC_Input_chIso03worst_ == 0.:
             return self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_
         elif self.X.qRC_Input_chIso03_ == 0. and self.X.qRC_Input_chIso03worst_ > 0.:
-            return self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_ + self.readerFinalRegChIW.EvaluateRegression("finalReg")[0]*self.scl_iqrs[1] + self.scl_centers[1]
+            return self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_ + (self.readerFinalRegChIW.EvaluateRegression("finalReg")[0]+0.5)*self.scl_iqrs[1] + self.scl_centers[1]
         elif self.X.qRC_Input_chIso03_ > 0. and self.X.qRC_Input_chIso03worst_ > 0.:
-            return self.X.qRC_Input_chIso03_ + self.readerFinalRegChI.EvaluateRegression("finalReg")[0]*self.scl_iqrs[0] + self.scl_centers[0], self.X.qRC_Input_chIso03worst_ + self.readerFinalRegChIW.EvaluateRegression("finalReg")[0]*self.scl_iqrs[1] + self.scl_centers[1]
+            return self.X.qRC_Input_chIso03_ + (self.readerFinalRegChI.EvaluateRegression("finalReg")[0]+0.5)*self.scl_iqrs[0] + self.scl_centers[0], self.X.qRC_Input_chIso03worst_ + (self.readerFinalRegChIW.EvaluateRegression("finalReg")[0]+0.5)*self.scl_iqrs[1] + self.scl_centers[1]
 
 def applyCorrection_tmva_ChIso(df,scalerChI,scalerChIW,weightsFinalRegChI,weightsFinalRegChIW,weightsFinalTailRegChI,weightsFinalTailRegChIW,weightsDataClf,weightsMcClf,leg2016):
 
     columns = ["probePt","probeScEta","probePhi","rho","probeChIso03","probeChIso03worst"]
     row = df[columns].values
     correction = np.apply_along_axis(computeCorrection_tmva_ChIso(scalerChI.center_[0],scalerChI.scale_[0],scalerChIW.center_[0],scalerChIW.scale_[0],weightsFinalRegChI,weightsFinalRegChIW,weightsFinalTailRegChI,weightsFinalTailRegChIW,weightsDataClf,weightsMcClf,leg2016),1,row)
-    df.loc[:,['probeChIso03_tmva_corr','probeChIso03worst_tmva_corr']] = correction
+    #print correction
+    df['probeChIso03_corr_tmva'] = correction[:,0]
+    df['probeChIso03worst_corr_tmva'] = correction[:,1]
