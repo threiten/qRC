@@ -75,7 +75,7 @@ class computeCorrection_tmva_ChIso:
     def p2t(self):
         
         #print 'Peak to Tail called'
-        return np.array([self.readerTailRegChI.EvaluateRegression("tailReg")[0]+0.5,self.readerTailRegChIW.EvaluateRegression("tailReg")[0]+0.5])
+        return np.array([self.readerTailRegChI.EvaluateRegression("tailReg")[0],self.readerTailRegChIW.EvaluateRegression("tailReg")[0]])
  
     def w(self,p_mc,p_data):
         return 1.-np.divide(p_data,p_mc)
@@ -101,9 +101,9 @@ class computeCorrection_tmva_ChIso:
         if self.X.qRC_Input_chIso03_ == 0. and self.X.qRC_Input_chIso03worst_ == 0.:
             return self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_
         elif self.X.qRC_Input_chIso03_ == 0. and self.X.qRC_Input_chIso03worst_ > 0.:
-            return self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_ + (self.readerFinalRegChIW.EvaluateRegression("finalReg")[0]+0.5)*self.scl_iqrs[1] + self.scl_centers[1]
+            return self.X.qRC_Input_chIso03_, self.X.qRC_Input_chIso03worst_ + (self.readerFinalRegChIW.EvaluateRegression("finalReg")[0])*self.scl_iqrs[1] + self.scl_centers[1]
         elif self.X.qRC_Input_chIso03_ > 0. and self.X.qRC_Input_chIso03worst_ > 0.:
-            return self.X.qRC_Input_chIso03_ + (self.readerFinalRegChI.EvaluateRegression("finalReg")[0]+0.5)*self.scl_iqrs[0] + self.scl_centers[0], self.X.qRC_Input_chIso03worst_ + (self.readerFinalRegChIW.EvaluateRegression("finalReg")[0]+0.5)*self.scl_iqrs[1] + self.scl_centers[1]
+            return self.X.qRC_Input_chIso03_ + (self.readerFinalRegChI.EvaluateRegression("finalReg")[0])*self.scl_iqrs[0] + self.scl_centers[0], self.X.qRC_Input_chIso03worst_ + (self.readerFinalRegChIW.EvaluateRegression("finalReg")[0])*self.scl_iqrs[1] + self.scl_centers[1]
 
 def applyCorrection_tmva_ChIso(df,scalerChI,scalerChIW,weightsFinalRegChI,weightsFinalRegChIW,weightsFinalTailRegChI,weightsFinalTailRegChIW,weightsDataClf,weightsMcClf,leg2016):
 
