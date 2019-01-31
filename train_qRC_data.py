@@ -16,6 +16,11 @@ def main(options):
     workDir = inp['workDir']
     weightsDir = inp['weightsDir']
 
+    if options.split is not None:
+        print 'Using split dfs for training two sets of weights!'
+        df_name = df_name + '_spl{}_1M.h5'.format(options.split)
+        weightsDir = weightsDir + '/spl{}'.format(options.split)
+
     if year == '2017':
         columns = ['probePt','probeScEta','probePhi','rho','probeEtaWidth','probeSigmaIeIe','probePhiWidth','probeR9','probeS4','probeCovarianceIeIp']
     elif year == '2016':
@@ -35,5 +40,7 @@ if __name__ == "__main__":
     requiredArgs.add_argument('-E','--EBEE', action='store', type=str, required=True)
     requiredArgs.add_argument('-N','--n_evts', action='store', type=int, required=True)
     requiredArgs.add_argument('-c','--config', action='store', type=str, required=True)
+    optArgs = parser.add_argument_group('Optional Arguments')
+    optArgs.add_argument('-s','--split', action='store', type=int)
     options=parser.parse_args()
     main(options)

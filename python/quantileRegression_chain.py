@@ -144,11 +144,6 @@ class quantileRegression_chain(object):
         if var not in self.vars+['{}_shift'.format(x) for x in self.vars]:
             raise ValueError('{} has to be one of {}'.format(var, self.vars))
         
-        # if 'diz' in key:
-        #     querystr = '{}!=0'.format(var)
-        # else:
-        #     querystr = '{0}=={0}'.format(var)
-
         if key.startswith('mc'):
             features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
             if 'diz' in key:
@@ -156,7 +151,7 @@ class quantileRegression_chain(object):
                 Y = self.MC.loc[self.MC[var]!=0,var]
             else:
                 X = self.MC.loc[:,features]
-                Y = self.MC.loc[:,var]
+                Y = self.MC.loc[:,var] 
 
         elif key.startswith('data'):
             features = self.kinrho + self.vars[:self.vars.index(var)]
@@ -171,7 +166,7 @@ class quantileRegression_chain(object):
 
         name_key = 'data' if 'data' in key else 'mc'
 
-        print 'Training quantile regrssion on {} for {} with features {}'.format(key,var,features)
+        print 'Training quantile regression on {} for {} with features {}'.format(key,var,features)
 
         with parallel_backend(self.backend):
             Parallel(n_jobs=len(self.quantiles),verbose=20)(delayed(trainClf)(q,maxDepth,minLeaf,X,Y,save=True,outDir='{}/{}'.format(self.workDir,weightsDir),name='{}_weights_{}_{}_{}'.format(name_key,self.EBEE,var,str(q).replace('.','p')),X_names=features,Y_name=var) for q in self.quantiles)
@@ -247,8 +242,12 @@ class quantileRegression_chain(object):
     def trainAllMC(self,weightsDir,n_jobs=1):
         
         for var in self.vars:
-            self.trainOnMC(var,weightsDir=weightsDir)
-            self.loadClfs(var,weightsDir)
+            try:
+                self.loadClfs(var,weightsDir)
+            except IOError:
+                self.trainOnMC(var,weightsDir=weightsDir)
+                self.loadClfs(var,weightsDir)
+
             self.correctY(var,n_jobs=n_jobs)
             
     def loadClfs(self, var, weightsDir):

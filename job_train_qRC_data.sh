@@ -11,4 +11,11 @@ quantile=$3
 N_evts=$4
 EBEE=$5
 
-python /mnt/t3nfs01/data01/shome/threiten/QReg/qRC/train_qRC_data.py -c ${config} -v ${variable} -q ${quantile} -N ${N_evts} -E ${EBEE}
+if [ ! -z "$6" ]
+then
+    echo Doing split training!
+    spl=$6
+    python /mnt/t3nfs01/data01/shome/threiten/QReg/qRC/train_qRC_data.py -c ${config} -v ${variable} -q ${quantile} -N ${N_evts} -E ${EBEE} -s ${spl}
+else
+    python /mnt/t3nfs01/data01/shome/threiten/QReg/qRC/train_qRC_data.py -c ${config} -v ${variable} -q ${quantile} -N ${N_evts} -E ${EBEE}
+fi
