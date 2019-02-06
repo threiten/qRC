@@ -1,6 +1,7 @@
 import numpy as np
 
 class Shifter2D:
+    
 
     def __init__(self,mcp0tclf,datap0tclf,mcqclf0,mcqclf1,X,Y):
         
@@ -28,7 +29,8 @@ class Shifter2D:
             self.mcqtls1 = None
 
         self.Y = Y
-        
+    
+
     def shiftYev(self,iev):
         
         Y = self.Y[iev]
@@ -95,6 +97,7 @@ class Shifter2D:
             y_tail = np.hstack((self.tailReg0.predict(np.hstack((self.X[iev],self.Y[iev][1],r)).reshape(1,-1)),self.tailReg1.predict(np.hstack((self.X[iev],self.Y[iev][0],p)).reshape(1,-1))))
             
         return y_tail
+    
 
     def __call__(self):
         return np.array([self.shiftYev(iev) for iev in xrange(self.Y.shape[0])]).reshape(-1,2)

@@ -5,14 +5,15 @@ import pandas as pd
 import pickle as pkl
 import xgboost as xgb
 import gzip
+import yaml
 import os
 import ROOT as rt
 from root_pandas import read_root
 
 from joblib import delayed, Parallel, parallel_backend, register_parallel_backend
 
-from IdMVAComputer import IdMvaComputer, helpComputeIdMva
-from eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
+from ..tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
+from ..tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
 from Corrector import Corrector, applyCorrection
 #from sklearn.externals.joblib import Parallel, parallel_backend, register_parallel_backend
 
@@ -24,6 +25,8 @@ class quantileRegression_chain(object):
         self.year = year
         self.workDir = workDir
         self.kinrho = ['probePt','probeScEta','probePhi','rho']
+        if not type(varrs) is list:
+            varrs=list((varrs,))
         self.vars = varrs
         self.quantiles = [0.01,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99]
         self.backend = 'loky'
@@ -211,7 +214,15 @@ class quantileRegression_chain(object):
         X = df.loc[:,features].values
         Y = df[target].values
 
-        clf = xgb.XGBRegressor(n_estimators=1000, maxDepth=10, gamma=0, n_jobs=n_jobs, base_score=0.)
+        try:
+            settings = yaml.load(open('{}/{}/finalRegression_settings.yaml'.format(self.workDir,weightsDir)))
+            clf = xgb.XGBRegressor(base_score=0.,n_jobs=n_jobs,**settings[var])
+            print('Custom settings loaded')
+        except KeyError:
+            print('No custom settings found, training with standard settings')
+            clf = xgb.XGBRegressor(n_estimators=1000, max_depth=10, gamma=0, base_score=0.,n_jobs=n_jobs)
+
+        print('Training final Regression for {} with features {}. Classifier:{}'.format(target,features,clf))
         clf.fit(X,Y)
 
         name = 'weights_finalRegressor_{}_{}'.format(self.EBEE,var)
@@ -342,13 +353,16 @@ class quantileRegression_chain(object):
             self.data[name] = Y
 
 
-    def setupJoblib(self,ipp_profile='default',sel_workers=None):
+    def setupJoblib(self,ipp_profile='default'):
         
         import ipyparallel as ipp
-        global joblib_rc,joblib_view
+        from ipyparallel.joblib import IPythonParallelBackend
+        global joblib_rc,joblib_view,joblib_be
         joblib_rc = ipp.Client(profile=ipp_profile)
-        joblib_view = joblib_rc.load_balanced_view(sel_workers)
-        joblib_view.register_joblib_backend()
+        joblib_view = joblib_rc.load_balanced_view()
+        joblib_be = IPythonParallelBackend(view=joblib_view)
+        register_parallel_backend('ipyparallel',lambda: joblib_be, make_default=True)
+
         self.backend = 'ipyparallel'
 
 

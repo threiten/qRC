@@ -1,8 +1,7 @@
-from import_file import import_file
 import argparse
 import yaml
+import qRC.python.quantileRegression_chain as QReg_C
 
-QReg_C = import_file("/mnt/t3nfs01/data01/shome/threiten/QReg/qRC/quantileRegression_chain")
 
 
 def main(options):

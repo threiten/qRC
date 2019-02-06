@@ -1,8 +1,7 @@
-from import_file import import_file
 import argparse
 import yaml
+import qRC.python.quantileRegression_chain_disc as QReg_C
 
-QReg_C = import_file("/mnt/t3nfs01/data01/shome/threiten/QReg/qRC/quantileRegression_chain_disc")
 
 def main(options):
 
@@ -26,7 +25,7 @@ def main(options):
     if options.backend is not None:
         qRC.setupJoblib(options.backend)
     qRC.loadMCDF(df_name_mc,0,options.n_evts,rsh=False)
-    qRC.loadDataDF(df_name_data,0,options.n_evts,rsh=False)
+    # qRC.loadDataDF(df_name_data,0,options.n_evts,rsh=False)
     qRC.trainAllMC(weightsDir=weightsDir,n_jobs=21)
 
 

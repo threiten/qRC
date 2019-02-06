@@ -1,8 +1,7 @@
-from import_file import import_file
 import argparse
 import yaml
-
-QReg_I = import_file("/mnt/t3nfs01/data01/shome/threiten/QReg/qRC/quantileRegression_chain_disc")
+import os
+import qRC.python.quantileRegression_chain_disc as QReg_I
 
 
 def main(options):
@@ -27,7 +26,12 @@ def main(options):
     qRC_I.quantiles = [options.quantile]
     qRC_I.loadDataDF(df_name,0,options.n_evts,rsh=False,columns=columns)
     qRC_I.trainOnData(options.variable,weightsDir=weightsDir)
-
+    if len(qRC_I.vars)>1:
+        if not os.path.exists('{}/{}/data_clf_3Cat_{}_{}_{}.pkl'.format(workDir,weightsDir,options.EBEE,qRC_I.vars[0],qRC_I.vars[1])):
+            qRC_I.train3Catclf(qRC_I.vars,'data',weightsDir=weightsDir)
+    else:
+        if not os.path.exists('{}/{}/data_clf_p0t_{}_{}.pkl'.format(workDir,weightsDir,options.EBEE,options.variable)):
+            qRC_I.trainp0tclf(options.variable,'data',weightsDir=weightsDir)
 
 if __name__ == "__main__":
 

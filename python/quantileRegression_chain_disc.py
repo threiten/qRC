@@ -4,12 +4,13 @@ import pandas as pd
 import pickle as pkl
 import gzip
 import os
-import ROOT as rt
+#import ROOT as rt
 import xgboost as xgb 
 
 from joblib import delayed, Parallel, parallel_backend, register_parallel_backend
 
-from IdMVAComputer import IdMvaComputer, helpComputeIdMva 
+from ..tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
+from ..tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
 from Corrector import Corrector, applyCorrection
 from quantileRegression_chain import quantileRegression_chain, trainClf
 from Shifter import Shifter, applyShift
@@ -138,7 +139,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
             self.MC['{}_shift'.format(varrs[1])] = Y_shift[:,1]    
         
         
-    def correctY(self,var,n_jobs=1,diz=None):
+    def correctY(self,var,n_jobs=1):
         
         if len(self.vars)==1:
             self.shiftY(var,n_jobs=n_jobs)
@@ -191,6 +192,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
                 else:
                     self.trainp0tclf(var,key='mc',weightsDir=weightsDir)
                     self.loadp0tclf(var,weightsDir)
+
             self.correctY(var,n_jobs=n_jobs)
 
     def trainFinalRegression(self,var,weightsDir,n_jobs=1):
