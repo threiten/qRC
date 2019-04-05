@@ -1,20 +1,20 @@
-import numpy as np
-from sklearn.ensemble import GradientBoostingRegressor
-import pandas as pd
-import pickle as pkl
 import gzip
 import os
 #import ROOT as rt
-import xgboost as xgb 
+import xgboost as xgb
+import numpy as np
+import pandas as pd
+import pickle as pkl
 
 from joblib import delayed, Parallel, parallel_backend, register_parallel_backend
 
+from sklearn.ensemble import GradientBoostingRegressor
 from ..tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
 from ..tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
 from Corrector import Corrector, applyCorrection
-from quantileRegression_chain import quantileRegression_chain, trainClf
-from Shifter import Shifter, applyShift
-from Shifter2D import Shifter2D, apply2DShift
+from qRC.python.quantileRegression_chain import quantileRegression_chain, trainClf
+from qRC.python.Shifter import Shifter, applyShift
+from qRC.python.Shifter2D import Shifter2D, apply2DShift
 
 class quantileRegression_chain_disc(quantileRegression_chain):
 
@@ -83,7 +83,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         
     def loadTailRegressors(self,varrs,weightsDir):
         
-        if not type(varrs) is list:
+        if not isinstance(varrs,list):
             varrs = list((varrs,))
         self.tail_clfs_mc = {}
         for var in varrs:
@@ -122,7 +122,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         Y = self.MC.loc[:,varrs]
 
         if X.isnull().values.any():
-            raise KeyError('Correct {} first!'.format(self.vars[:self.vars.index(var)]))
+            raise KeyError('Correct all of {} first!'.format(varrs))
 
         Y = Y.values.reshape(-1,2)
         Z = np.hstack([X,Y])
@@ -199,20 +199,17 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         super(quantileRegression_chain_disc,self).trainFinalRegression(var,weightsDir,diz=True,n_jobs=n_jobs)
     
     def trainFinalTailRegressor(self,var,weightsDir,weightsDirIn,n_jobs=1):
-        
-
-        df = self.MC.query('{}!=0'.format(var))
 
         if len(self.vars) == 1:
             self.loadClfs(var,weightsDirIn)
-            df['cdf_{}'.format(var)] = self._getCondCDF(df,self.clfs_mc,self.kinrho,var)
+            self.MC.loc[self.MC[var] != 0,'cdf_{}'.format(var)] = self._getCondCDF(self.MC.loc[self.MC[var] != 0,:],self.clfs_mc,self.kinrho,var)
         elif len(self.vars) > 1:
             self.loadTailRegressors(self.vars,weightsDirIn)
-            df['cdf_{}'.format(var)] = self._getCondCDF(df,self.tail_clfs_mc[var],self.kinrho+[x for x in self.vars if not x == var],var)
-            
+            self.MC.loc[self.MC[var] != 0,'cdf_{}'.format(var)] = self._getCondCDF(self.MC.loc[self.MC[var] != 0,:],self.tail_clfs_mc[var],self.kinrho+[x for x in self.vars if not x == var],var)
+
         features = self.kinrho + [x for x in self.vars if not x == var] + ['cdf_{}'.format(var)]
-        X = df.loc[:,features].values
-        Y = df[var].values
+        X = self.MC.loc[self.MC[var] != 0., features].values
+        Y = self.MC.loc[self.MC[var] != 0., var].values
         
         print 'Training final tail regressor with features {} for {}'.format(features,var)
         clf = xgb.XGBRegressor(n_estimators=1000, maxDepth=10, gamma=0, n_jobs=n_jobs, base_score=0.)
@@ -224,7 +221,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
 
     def loadFinalTailRegressor(self,varrs,weightsDir):
         
-        if not type(varrs) is list:
+        if not isinstance(varrs,list):
             varrs = list((varrs,))
         self.finalTailRegs = {}
         for var in varrs:

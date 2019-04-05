@@ -47,10 +47,10 @@ class Shifter:
         if self.mcqtls is not None:
             indq = np.searchsorted(bins,r)
             y_tail = np.interp(r,bins[indq-1:indq+1],[self.mcqtls[indq-1,iev],self.mcqtls[indq,iev]])
-            if y_tail<0.:
-                print 'Warning! Shifting to values <0. r = {}, bins = {}, qtls = {}'.format(r,bins[indq-1:indq+1],[self.mcqtls[indq-1,iev],self.mcqtls[indq,iev]])
+            if y_tail<=0.:
+                print 'Warning! Shifting to values <=0. r = {}, bins = {}, qtls = {}'.format(r,bins[indq-1:indq+1],[self.mcqtls[indq-1,iev],self.mcqtls[indq,iev]])
         elif self.tailReg is not None:
-            y_tail = self.tailReg.predict(np.hstack((self.X[iev],r)).reshape(1,-1))
+            y_tail = float(self.tailReg.predict(np.hstack((self.X[iev],r)).reshape(1,-1)))
 
         return y_tail
 

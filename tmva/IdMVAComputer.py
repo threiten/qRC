@@ -41,6 +41,11 @@ class IdMvaComputer:
          print "Using variables corrected by quantile regression"
          self.columns = map(lambda x: x+"_corr" if x in correct else x, columns)
          print self.columns
+         
+      elif self.tpC=="final":
+         print "Using variables corrected by final regression"
+         self.columns = map(lambda x: x+"_corr_1Reg" if x in correct else x, columns)
+         print self.columns
 
       elif self.tpC=="old":
          print "Using variables corrected by old method"

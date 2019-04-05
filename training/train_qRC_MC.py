@@ -23,7 +23,7 @@ def main(options):
 
     qRC = QReg_C.quantileRegression_chain(year,options.EBEE,workDir,variables)
     if options.backend is not None:
-        qRC.setupJoblib(options.backend)
+        qRC.setupJoblib(options.backend,options.clusterid)
     qRC.loadMCDF(df_name_mc,0,options.n_evts,rsh=False)
     qRC.loadDataDF(df_name_data,0,options.n_evts,rsh=False)
     qRC.trainAllMC(weightsDir=weightsDir,n_jobs=21)
@@ -39,5 +39,6 @@ if __name__ == "__main__":
     optArgs = parser.add_argument_group('Optional Arguments')
     optArgs.add_argument('-s','--split', action='store', type=int)
     optArgs.add_argument('-B','--backend', action='store', type=str)
+    optArgs.add_argument('-i','--clusterid', action='store', type=str)
     options=parser.parse_args()
     main(options)
