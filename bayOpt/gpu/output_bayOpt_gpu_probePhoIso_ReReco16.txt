@@ -1,0 +1,133 @@
+Starting Gaussian process!
+|   iter    |  target   |   gamma   | max_depth | min_ch... | n_esti... | reg_alpha | reg_la... | subsample |
+-------------------------------------------------------------------------------------------------------------
+Training sample score:  [0.98724092 0.98724254 0.98731284 0.98742674 0.98751123]
+| [0m 1       [0m | [0m 0.7207  [0m | [0m 7.961   [0m | [0m 11.19   [0m | [0m 31.18   [0m | [0m 4.002e+0[0m | [0m 5.906   [0m | [0m 4.589   [0m | [0m 0.7152  [0m |
+Training sample score:  [0.83075004 0.82902133 0.83193169 0.82923272 0.83058675]
+| [0m 2       [0m | [0m 0.7184  [0m | [0m 9.455   [0m | [0m 4.67    [0m | [0m 33.39   [0m | [0m 1.501e+0[0m | [0m 6.697   [0m | [0m 2.426   [0m | [0m 0.8938  [0m |
+Training sample score:  [0.944424   0.94290451 0.9442606  0.94369044 0.94659602]
+| [95m 3       [0m | [95m 0.7217  [0m | [95m 0.06173 [0m | [95m 11.75   [0m | [95m 199.7   [0m | [95m 4.99e+03[0m | [95m 2.189   [0m | [95m 5.684   [0m | [95m 0.8681  [0m |
+Training sample score:  [0.99420133 0.99418322 0.9941272  0.99422327 0.99417898]
+| [95m 4       [0m | [95m 0.7306  [0m | [95m 0.3197  [0m | [95m 14.19   [0m | [95m 1.937   [0m | [95m 4.99e+03[0m | [95m 8.31    [0m | [95m 1.381   [0m | [95m 0.9343  [0m |
+Training sample score:  [0.95541908 0.95506681 0.95489431 0.95526964 0.95555565]
+| [95m 5       [0m | [95m 0.7357  [0m | [95m 5.773   [0m | [95m 5.376   [0m | [95m 2.421   [0m | [95m 4.994e+0[0m | [95m 7.695   [0m | [95m 8.052   [0m | [95m 0.9747  [0m |
+Training sample score:  [0.84200128 0.83786665 0.84212516 0.83734692 0.84127422]
+| [0m 6       [0m | [0m 0.6991  [0m | [0m 8.746   [0m | [0m 3.179   [0m | [0m 2.261   [0m | [0m 4.991e+0[0m | [0m 8.72    [0m | [0m 7.649   [0m | [0m 0.7416  [0m |
+Training sample score:  [0.92439603 0.92142864 0.92383661 0.92233535 0.92700144]
+| [0m 7       [0m | [0m 0.7275  [0m | [0m 0.7178  [0m | [0m 11.95   [0m | [0m 176.0   [0m | [0m 2.944e+0[0m | [0m 2.521   [0m | [0m 9.085   [0m | [0m 0.8802  [0m |
+Training sample score:  [0.79263238 0.78676157 0.79243912 0.78413717 0.79656407]
+| [0m 8       [0m | [0m 0.7143  [0m | [0m 10.0    [0m | [0m 3.0     [0m | [0m 1.0     [0m | [0m 2.243e+0[0m | [0m 4.382   [0m | [0m 10.0    [0m | [0m 1.0     [0m |
+Training sample score:  [0.81919987 0.81131904 0.81869806 0.81326285 0.82640918]
+| [0m 9       [0m | [0m 0.7309  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 200.0   [0m | [0m 1e+03   [0m | [0m 0.0     [0m | [0m 10.0    [0m | [0m 0.5     [0m |
+Training sample score:  [0.83189444 0.83021975 0.8333916  0.83042126 0.83606676]
+| [0m 10      [0m | [0m 0.6782  [0m | [0m 10.0    [0m | [0m 3.0     [0m | [0m 1.0     [0m | [0m 3.456e+0[0m | [0m 10.0    [0m | [0m 0.0     [0m | [0m 0.5     [0m |
+Training sample score:  [0.85628392 0.84897503 0.85546366 0.8510405  0.86154831]
+| [0m 11      [0m | [0m 0.7311  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 200.0   [0m | [0m 1.882e+0[0m | [0m 0.0     [0m | [0m 0.0     [0m | [0m 0.5     [0m |
+Training sample score:  [0.95956476 0.95866464 0.9592078  0.95888563 0.96125089]
+| [0m 12      [0m | [0m 0.7219  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 200.0   [0m | [0m 4.387e+0[0m | [0m 0.0     [0m | [0m 10.0    [0m | [0m 1.0     [0m |
+Training sample score:  [0.86868639 0.86208384 0.8667269  0.86303529 0.87350031]
+| [0m 13      [0m | [0m 0.7311  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 200.0   [0m | [0m 2.555e+0[0m | [0m 10.0    [0m | [0m 0.0     [0m | [0m 0.5     [0m |
+Training sample score:  [0.95210711 0.95076537 0.95196208 0.95038208 0.95417147]
+| [0m 14      [0m | [0m 0.7232  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 200.0   [0m | [0m 3.715e+0[0m | [0m 0.0     [0m | [0m 10.0    [0m | [0m 1.0     [0m |
+Training sample score:  [0.80486701 0.79792822 0.80131489 0.79629702 0.80590977]
+| [0m 15      [0m | [0m 0.7149  [0m | [0m 10.0    [0m | [0m 3.0     [0m | [0m 1.0     [0m | [0m 2.727e+0[0m | [0m 0.0     [0m | [0m 10.0    [0m | [0m 1.0     [0m |
+Training sample score:  [0.77059634 0.76008558 0.76301183 0.75939727 0.77293345]
+| [0m 16      [0m | [0m 0.6952  [0m | [0m 10.0    [0m | [0m 3.0     [0m | [0m 1.0     [0m | [0m 1e+03   [0m | [0m 10.0    [0m | [0m 0.0     [0m | [0m 1.0     [0m |
+Training sample score:  [0.88854003 0.88230347 0.88631656 0.88372681 0.89180001]
+| [0m 17      [0m | [0m 0.728   [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 200.0   [0m | [0m 3.291e+0[0m | [0m 0.0     [0m | [0m 10.0    [0m | [0m 0.5     [0m |
+Training sample score:  [0.73400579 0.72715983 0.73303067 0.72920795 0.73987678]
+| [0m 18      [0m | [0m 0.7016  [0m | [0m 0.0     [0m | [0m 3.0     [0m | [0m 200.0   [0m | [0m 1.321e+0[0m | [0m 10.0    [0m | [0m 0.0     [0m | [0m 1.0     [0m |
+Training sample score:  [0.9567386  0.95556086 0.95696869 0.95580818 0.95835396]
+| [0m 19      [0m | [0m 0.7231  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 200.0   [0m | [0m 4.1e+03 [0m | [0m 0.0     [0m | [0m 10.0    [0m | [0m 1.0     [0m |
+Training sample score:  [0.7837538  0.77781926 0.78478298 0.77861464 0.78685661]
+| [0m 20      [0m | [0m 0.6845  [0m | [0m 0.0     [0m | [0m 3.0     [0m | [0m 1.0     [0m | [0m 1.866e+0[0m | [0m 10.0    [0m | [0m 10.0    [0m | [0m 0.5     [0m |
+Training sample score:  [0.99097913 0.99109158 0.99067096 0.99030319 0.99044932]
+| [0m 21      [0m | [0m 0.7071  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 1.0     [0m | [0m 3.107e+0[0m | [0m 10.0    [0m | [0m 0.0     [0m | [0m 1.0     [0m |
+Training sample score:  [0.99998298 0.99998751 0.99998478 0.99998495 0.99998374]
+| [0m 22      [0m | [0m 0.7213  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 1.0     [0m | [0m 4.297e+0[0m | [0m 0.0     [0m | [0m 10.0    [0m | [0m 1.0     [0m |
+Training sample score:  [0.75142885 0.74479832 0.75116522 0.7456027  0.75650573]
+| [0m 23      [0m | [0m 0.7092  [0m | [0m 10.0    [0m | [0m 3.0     [0m | [0m 200.0   [0m | [0m 2.194e+0[0m | [0m 10.0    [0m | [0m 10.0    [0m | [0m 1.0     [0m |
+Training sample score:  [0.74098029 0.73285502 0.74044622 0.73474254 0.74513344]
+| [0m 24      [0m | [0m 0.7038  [0m | [0m 10.0    [0m | [0m 3.0     [0m | [0m 200.0   [0m | [0m 1.615e+0[0m | [0m 10.0    [0m | [0m 10.0    [0m | [0m 1.0     [0m |
+Training sample score:  [0.99890491 0.99886145 0.99887006 0.9988924  0.9988715 ]
+| [0m 25      [0m | [0m 0.731   [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 1.0     [0m | [0m 1.23e+03[0m | [0m 0.0     [0m | [0m 10.0    [0m | [0m 0.5     [0m |
+Training sample score:  [0.99998393 0.99998729 0.99998469 0.99998385 0.99998459]
+| [0m 26      [0m | [0m 0.7217  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 1.0     [0m | [0m 3.739e+0[0m | [0m 0.0     [0m | [0m 10.0    [0m | [0m 1.0     [0m |
+Training sample score:  [0.99072835 0.99070465 0.99060525 0.99074861 0.99068113]
+| [0m 27      [0m | [0m 0.7247  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 1.0     [0m | [0m 2.477e+0[0m | [0m 10.0    [0m | [0m 0.0     [0m | [0m 0.5     [0m |
+Training sample score:  [0.76912312 0.76354831 0.7706376  0.76267417 0.77430748]
+| [0m 28      [0m | [0m 0.7164  [0m | [0m 0.0     [0m | [0m 3.0     [0m | [0m 200.0   [0m | [0m 3.516e+0[0m | [0m 10.0    [0m | [0m 0.0     [0m | [0m 1.0     [0m |
+Training sample score:  [0.76187333 0.75590243 0.76241172 0.75414054 0.76771361]
+| [0m 29      [0m | [0m 0.711   [0m | [0m 10.0    [0m | [0m 3.0     [0m | [0m 200.0   [0m | [0m 2.753e+0[0m | [0m 10.0    [0m | [0m 0.0     [0m | [0m 0.9911  [0m |
+Training sample score:  [0.76467109 0.75898571 0.76618332 0.75857452 0.76992605]
+| [0m 30      [0m | [0m 0.7152  [0m | [0m 10.0    [0m | [0m 3.0     [0m | [0m 200.0   [0m | [0m 3.119e+0[0m | [0m 10.0    [0m | [0m 0.0     [0m | [0m 1.0     [0m |
+Training sample score:  [0.77513924 0.76902022 0.77635903 0.76966436 0.77730712]
+| [0m 31      [0m | [0m 0.6986  [0m | [0m 2.21    [0m | [0m 3.106   [0m | [0m 112.2   [0m | [0m 4.231e+0[0m | [0m 0.5451  [0m | [0m 9.521   [0m | [0m 0.709   [0m |
+Training sample score:  [0.9228591  0.91726573 0.92130487 0.91907293 0.92508027]
+| [0m 32      [0m | [0m 0.7246  [0m | [0m 0.0     [0m | [0m 15.0    [0m | [0m 96.07   [0m | [0m 2.063e+0[0m | [0m 0.0     [0m | [0m 0.0     [0m | [0m 0.5     [0m |
+=============================================================================================================
+Best parameters:  {'target': 0.7356544578797408, 'params': {'gamma': 5.772935361093483, 'max_depth': 5.376070012864828, 'min_child_weight': 2.421063619648084, 'n_estimators': 4993.511991903764, 'reg_alpha': 7.694704659370236, 'reg_lambda': 8.052066775543315, 'subsample': 0.9746991836358336}}
+Iteration 0: 
+	{'target': 0.7206928353266961, 'params': {'gamma': 7.961335116537027, 'max_depth': 11.188380259069987, 'min_child_weight': 31.17733573830609, 'n_estimators': 4001.60664379877, 'reg_alpha': 5.906066433110944, 'reg_lambda': 4.589448095018357, 'subsample': 0.7151872908525422}}
+Iteration 1: 
+	{'target': 0.7183994781284264, 'params': {'gamma': 9.454766659661509, 'max_depth': 4.670204387812288, 'min_child_weight': 33.38873578894131, 'n_estimators': 1501.335936245225, 'reg_alpha': 6.6966225425341275, 'reg_lambda': 2.4264974639688974, 'subsample': 0.8937637389163902}}
+Iteration 2: 
+	{'target': 0.7216739363898885, 'params': {'gamma': 0.06172656228072948, 'max_depth': 11.751514758688804, 'min_child_weight': 199.656408178216, 'n_estimators': 4990.1342117333625, 'reg_alpha': 2.189460098577458, 'reg_lambda': 5.684339322348474, 'subsample': 0.8681212788740991}}
+Iteration 3: 
+	{'target': 0.7306273883851675, 'params': {'gamma': 0.31974499172341186, 'max_depth': 14.187589434233471, 'min_child_weight': 1.9374051430151438, 'n_estimators': 4989.548393213841, 'reg_alpha': 8.309868940743561, 'reg_lambda': 1.3810491828612992, 'subsample': 0.9342684960502285}}
+Iteration 4: 
+	{'target': 0.7356544578797408, 'params': {'gamma': 5.772935361093483, 'max_depth': 5.376070012864828, 'min_child_weight': 2.421063619648084, 'n_estimators': 4993.511991903764, 'reg_alpha': 7.694704659370236, 'reg_lambda': 8.052066775543315, 'subsample': 0.9746991836358336}}
+Iteration 5: 
+	{'target': 0.6991172304637484, 'params': {'gamma': 8.746379126014434, 'max_depth': 3.179435263915576, 'min_child_weight': 2.261376839012542, 'n_estimators': 4990.783915198381, 'reg_alpha': 8.719540113999228, 'reg_lambda': 7.648639668076579, 'subsample': 0.7416186396409048}}
+Iteration 6: 
+	{'target': 0.7275092071362913, 'params': {'gamma': 0.7178343760553252, 'max_depth': 11.953605840678552, 'min_child_weight': 176.04334020230257, 'n_estimators': 2944.3498737379523, 'reg_alpha': 2.521468158993648, 'reg_lambda': 9.085492184157394, 'subsample': 0.8802043728205888}}
+Iteration 7: 
+	{'target': 0.7143121830065541, 'params': {'gamma': 10.0, 'max_depth': 3.0, 'min_child_weight': 1.0, 'n_estimators': 2242.569029273368, 'reg_alpha': 4.382230770677948, 'reg_lambda': 10.0, 'subsample': 1.0}}
+Iteration 8: 
+	{'target': 0.7308961673061358, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 200.0, 'n_estimators': 1000.0, 'reg_alpha': 0.0, 'reg_lambda': 10.0, 'subsample': 0.5}}
+Iteration 9: 
+	{'target': 0.6782068468409979, 'params': {'gamma': 10.0, 'max_depth': 3.0, 'min_child_weight': 1.0, 'n_estimators': 3456.4823489811683, 'reg_alpha': 10.0, 'reg_lambda': 0.0, 'subsample': 0.5}}
+Iteration 10: 
+	{'target': 0.7311461837399256, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 200.0, 'n_estimators': 1882.3786248931508, 'reg_alpha': 0.0, 'reg_lambda': 0.0, 'subsample': 0.5}}
+Iteration 11: 
+	{'target': 0.721884157081702, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 200.0, 'n_estimators': 4387.4202087514095, 'reg_alpha': 0.0, 'reg_lambda': 10.0, 'subsample': 1.0}}
+Iteration 12: 
+	{'target': 0.7311484971635265, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 200.0, 'n_estimators': 2554.8486654657477, 'reg_alpha': 10.0, 'reg_lambda': 0.0, 'subsample': 0.5}}
+Iteration 13: 
+	{'target': 0.7232158707861124, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 200.0, 'n_estimators': 3714.931634174187, 'reg_alpha': 0.0, 'reg_lambda': 10.0, 'subsample': 1.0}}
+Iteration 14: 
+	{'target': 0.7148808344757608, 'params': {'gamma': 10.0, 'max_depth': 3.0, 'min_child_weight': 1.0, 'n_estimators': 2727.4731900568277, 'reg_alpha': 0.0, 'reg_lambda': 10.0, 'subsample': 1.0}}
+Iteration 15: 
+	{'target': 0.695226439774866, 'params': {'gamma': 10.0, 'max_depth': 3.0, 'min_child_weight': 1.0, 'n_estimators': 1000.0, 'reg_alpha': 10.0, 'reg_lambda': 0.0, 'subsample': 1.0}}
+Iteration 16: 
+	{'target': 0.727959609946111, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 200.0, 'n_estimators': 3290.7061516448516, 'reg_alpha': 0.0, 'reg_lambda': 10.0, 'subsample': 0.5}}
+Iteration 17: 
+	{'target': 0.7016300424804486, 'params': {'gamma': 0.0, 'max_depth': 3.0, 'min_child_weight': 200.0, 'n_estimators': 1321.012059566954, 'reg_alpha': 10.0, 'reg_lambda': 0.0, 'subsample': 1.0}}
+Iteration 18: 
+	{'target': 0.723077061312565, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 200.0, 'n_estimators': 4100.112199368823, 'reg_alpha': 0.0, 'reg_lambda': 10.0, 'subsample': 1.0}}
+Iteration 19: 
+	{'target': 0.684476784031944, 'params': {'gamma': 0.0, 'max_depth': 3.0, 'min_child_weight': 1.0, 'n_estimators': 1866.37634108138, 'reg_alpha': 10.0, 'reg_lambda': 10.0, 'subsample': 0.5}}
+Iteration 20: 
+	{'target': 0.7070847694900525, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 1.0, 'n_estimators': 3106.7679767332834, 'reg_alpha': 10.0, 'reg_lambda': 0.0, 'subsample': 1.0}}
+Iteration 21: 
+	{'target': 0.7212760994541971, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 1.0, 'n_estimators': 4297.045346348214, 'reg_alpha': 0.0, 'reg_lambda': 10.0, 'subsample': 1.0}}
+Iteration 22: 
+	{'target': 0.7092217892256526, 'params': {'gamma': 10.0, 'max_depth': 3.0, 'min_child_weight': 200.0, 'n_estimators': 2193.6205170918893, 'reg_alpha': 10.0, 'reg_lambda': 10.0, 'subsample': 1.0}}
+Iteration 23: 
+	{'target': 0.703808522375979, 'params': {'gamma': 10.0, 'max_depth': 3.0, 'min_child_weight': 200.0, 'n_estimators': 1615.3419545687602, 'reg_alpha': 10.0, 'reg_lambda': 10.0, 'subsample': 1.0}}
+Iteration 24: 
+	{'target': 0.7309825118616168, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 1.0, 'n_estimators': 1229.558745379396, 'reg_alpha': 0.0, 'reg_lambda': 10.0, 'subsample': 0.5}}
+Iteration 25: 
+	{'target': 0.7216626553407668, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 1.0, 'n_estimators': 3739.2194788984484, 'reg_alpha': 0.0, 'reg_lambda': 10.0, 'subsample': 1.0}}
+Iteration 26: 
+	{'target': 0.7246679953693898, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 1.0, 'n_estimators': 2477.1872053271577, 'reg_alpha': 10.0, 'reg_lambda': 0.0, 'subsample': 0.5}}
+Iteration 27: 
+	{'target': 0.7163789162505868, 'params': {'gamma': 0.0, 'max_depth': 3.0, 'min_child_weight': 200.0, 'n_estimators': 3515.5041726542877, 'reg_alpha': 10.0, 'reg_lambda': 0.0, 'subsample': 1.0}}
+Iteration 28: 
+	{'target': 0.7109648973417253, 'params': {'gamma': 10.0, 'max_depth': 3.0, 'min_child_weight': 200.0, 'n_estimators': 2752.990313254747, 'reg_alpha': 10.0, 'reg_lambda': 0.0, 'subsample': 0.9910696608186019}}
+Iteration 29: 
+	{'target': 0.7151785384323872, 'params': {'gamma': 10.0, 'max_depth': 3.0, 'min_child_weight': 200.0, 'n_estimators': 3118.8142583555173, 'reg_alpha': 10.0, 'reg_lambda': 0.0, 'subsample': 0.9999999992616074}}
+Iteration 30: 
+	{'target': 0.6985613396045309, 'params': {'gamma': 2.209619846909913, 'max_depth': 3.10607727644151, 'min_child_weight': 112.20345541169027, 'n_estimators': 4230.72112612231, 'reg_alpha': 0.5450994657681318, 'reg_lambda': 9.520785866110481, 'subsample': 0.7089861850649941}}
+Iteration 31: 
+	{'target': 0.724603284347461, 'params': {'gamma': 0.0, 'max_depth': 15.0, 'min_child_weight': 96.07419050955153, 'n_estimators': 2063.137106687942, 'reg_alpha': 0.0, 'reg_lambda': 0.0, 'subsample': 0.5000000000186615}}
