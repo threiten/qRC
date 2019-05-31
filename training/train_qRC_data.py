@@ -20,7 +20,7 @@ def main(options):
         df_name = df_name + '_spl{}_1M.h5'.format(options.split)
         weightsDir = weightsDir + '/spl{}'.format(options.split)
 
-    if year == '2017':
+    if year == '2017' or year == '2018':
         columns = ['probePt','probeScEta','probePhi','rho','probeEtaWidth','probeSigmaIeIe','probePhiWidth','probeR9','probeS4','probeCovarianceIeIp']
     elif year == '2016':
         columns = ['probePt','probeScEta','probePhi','rho','probeEtaWidth','probeSigmaIeIe','probePhiWidth','probeR9','probeS4','probeCovarianceIetaIphi']

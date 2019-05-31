@@ -26,6 +26,7 @@ def main(options):
         qRC.setupJoblib(options.backend,cluster_id=options.clusterid)
     qRC.loadMCDF(df_name_mc,0,options.n_evts,rsh=False)
     # qRC.loadDataDF(df_name_data,0,options.n_evts,rsh=False)
+    print qRC.MC.index.size
     qRC.trainAllMC(weightsDir=weightsDir,n_jobs=21)
 
 

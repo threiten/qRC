@@ -43,7 +43,7 @@ class quantileRegression_chain(object):
         self.quantiles = [0.01,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99]
         self.backend = 'loky'
         self.EBEE = EBEE
-        self.branches = ['probeScEta','probeEtaWidth','probeR9','weight','probeSigmaRR','tagScPreshowerEnergy','probePass_invEleVeto','tagChIso03','probeChIso03','probeS4','tagR9','tagPhiWidth','probePt','tagSigmaRR','probePhiWidth','probeChIso03worst','puweight','tagEleMatch','tagPhi','probeScEnergy','nvtx','probePhoIso','tagPhoIso','run','tagScEta','probeEleMatch','probeCovarianceIeIp','tagPt','rho','tagS4','tagSigmaIeIe','tagCovarianceIpIp','tagCovarianceIeIp','tagScEnergy','tagChIso03worst','probeSigmaIeIe','probePhi','mass','probeCovarianceIpIp','tagEtaWidth','probeScPreshowerEnergy','probeHoE','probeFull5x5_e1x5','probeFull5x5_e5x5','probeNeutIso']
+        self.branches = ['probeScEta','probeEtaWidth','probeR9','weight','probeSigmaRR','tagChIso03','probeChIso03','probeS4','tagR9','tagPhiWidth','probePt','tagSigmaRR','probePhiWidth','probeChIso03worst','puweight','tagEleMatch','tagPhi','probeScEnergy','nvtx','probePhoIso','tagPhoIso','run','tagScEta','probeEleMatch','probeCovarianceIeIp','tagPt','rho','tagS4','tagSigmaIeIe','tagCovarianceIpIp','tagCovarianceIeIp','tagScEnergy','tagChIso03worst','probeSigmaIeIe','probePhi','mass','probeCovarianceIpIp','tagEtaWidth','probeHoE','probeFull5x5_e1x5','probeFull5x5_e5x5','probeNeutIso','probePassEleVeto']
 
         if year == '2016':
             self.branches = self.branches + ['probePass_invEleVeto','probeCovarianceIetaIphi','probeCovarianceIphiIphi','probeCovarianceIetaIphi','probeCovarianceIphiIphi']
@@ -311,7 +311,7 @@ class quantileRegression_chain(object):
         diz : bool, default ``False``
             Specifies if varible to train for is discontinuous. Only used by ``quantileRegression_chain_disc``
         n_jobs : int, default 1
-            Number of threads to be used for the training with XGBoost. This happend interally in XGBoost. 
+            Number of threads to be used for the training with XGBoost. This happens interally in XGBoost. 
             An ipyparallel backend will not beused, even if set up.
         """
         
@@ -387,9 +387,9 @@ class quantileRegression_chain(object):
         var_raw = var[:var.find('_')] if '_' in var else var
         features = self.kinrho + self.vars
         if diz:
-            X = self.MC.loc[self.MC[var] != 0,features].values
-            self.MC.loc[self.MC[var] != 0,'{}_corr_1Reg'.format(var_raw)] = self.MC.loc[self.MC[var] != 0,var] + self.scaler.inverse_transform(self.finalReg.predict(X).reshape(-1,1)).ravel()
-            self.MC.loc[self.MC[var] == 0,'{}_corr_1Reg'.format(var_raw)] = 0.
+            X = self.MC.loc[self.MC[var] != 0.,features].values
+            self.MC.loc[self.MC[var] != 0.,'{}_corr_1Reg'.format(var_raw)] = self.MC.loc[self.MC[var] != 0.,var] + self.scaler.inverse_transform(self.finalReg.predict(X).reshape(-1,1)).ravel()
+            self.MC.loc[self.MC[var] == 0.,'{}_corr_1Reg'.format(var_raw)] = 0.
         else:
             X = self.MC.loc[:,features].values
             self.MC['{}_corr_1Reg'.format(var)] = self.MC[var] + self.scaler.inverse_transform(self.finalReg.predict(X).reshape(-1,1)).ravel()
