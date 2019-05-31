@@ -64,6 +64,7 @@ After validating the initial training, one can train the final single regressors
 ### Note on config files
 
 In general the config files for the training for data and simulation for the initial and final training have the same format. Examples can be found in `examples`. The following keywords should be used
+
 | Keyword    | Used for                                                                   |
 |------------|----------------------------------------------------------------------------|
 | Dataframes | `(data/mc)_(EB/EE)` for the dataframe for data/MC in EB/EE                 |
