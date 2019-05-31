@@ -23,7 +23,7 @@ The strategy to train on a large dataset is the following
 	
 2. Train Shower Shapes on MC
    
-   To train the shower shape correction for MC use `training/train_qRC_MC.py`
+   To train the shower shape correction for MC use `training/train_qRC_MC.py`. Before starting the training on MC, the training on Data needs to be finished completely
    ```bash
    python train_qRC_MC.py  -c <config_file_ShowerShapes>.yaml -N <n_evts> -E <EB/EE> -B <cluster_profile> -i <cluster_id>
    ```
@@ -63,4 +63,14 @@ After validating the initial training, one can train the final single regressors
 	
 ### Note on config files
 
-In general the config files for the training for data and simulation for the initial and final training have the same format. Examples can be found in `examples` 
+In general the config files for the training for data and simulation for the initial and final training have the same format. Examples can be found in `examples`. The following keywords should be used
+| Keyword    | Used for                                                                   |
+|------------|----------------------------------------------------------------------------|
+| Dataframes | `(data/mc)_(EB/EE)` for the dataframe for data/MC in EB/EE                 |
+| variables  | The list of variables to be corrected. The order here is important         |
+| year       | The year of data-taking the relevant datasets are from                     |
+| workDir    | the path to the working dir, dataframes and weightsDir need to be in there |
+| weightsDir | directory to store the weights. Create before training                     |
+| outDir     | directory to store the final weight. Create before training                |
+
+
