@@ -6,7 +6,7 @@ class computeCorrection_tmva:
 
     def __init__(self,scl_center,scl_iqr,weights,leg2016=False):
     
-        rt.gROOT.LoadMacro("/mnt/t3nfs01/data01/shome/threiten/QReg/qRC/qRC_xmlReader.C")
+        rt.gROOT.LoadMacro("/work/threiten/QReg/qRC/tmva/qRC_xmlReader.C")
       
         self.X = rt.qRC_Input()
         self.readerEB = rt.bookReaders(weights, self.X)
@@ -30,8 +30,8 @@ class computeCorrection_tmva:
 
 def applyFinalRegression_tmva(var,df,scaler,weights,leg2016):
     
-    columns = ["probePt","probeScEta","probePhi","rho","probeCovarianceIeIp","probeS4","probeR9","probePhiWidth","probeSigmaIeIe","probeEtaWidth"]
-    row=df[columns].values
+    row=df
     correction = np.apply_along_axis(computeCorrection_tmva(scaler.center_[0],scaler.scale_[0],weights,leg2016),1,row)
-    df['{}_corr_tmva'.format(var)] = df[var].values + correction.ravel()
+    
+    return correction
     

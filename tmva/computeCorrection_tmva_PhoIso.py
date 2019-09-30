@@ -6,7 +6,7 @@ class computeCorrection_tmva_Iso:
 
     def __init__(self,scl_center,scl_iqr,weightsFinalReg,weightsFinalTailReg,weightsDataClf,weightsMcClf,leg2016=False):
     
-        rt.gROOT.LoadMacro("/mnt/t3nfs01/data01/shome/threiten/QReg/qRC/qRC_xmlReader_PhoIso.C")
+        rt.gROOT.LoadMacro("/t3home/threiten/python/qRC/tmva/qRC_xmlReader_PhoIso.C")
       
         self.X = rt.qRC_Input_Iso()
         self.readerFinalReg = rt.bookReaderFinalReg(weightsFinalReg, self.X)
@@ -28,9 +28,9 @@ class computeCorrection_tmva_Iso:
         drats.append(((1-pPeak_data)-(1-pPeak_mc))/pPeak_mc)
         drats.append(((pPeak_data)-(pPeak_mc))/(1-pPeak_mc))
         
-        if self.X.qRC_Input_phoIso_ == 0. and (1-pPeak_data)>(1-pPeak_mc) and r<drats[0]:
+        if self.X.qRC_Input_phoIso_ == 0. and (1-pPeak_data)>(1-pPeak_mc) and r<=drats[0]:
             shifted = self.p2t()
-        elif self.X.qRC_Input_phoIso_ > 0. and pPeak_data>pPeak_mc and r<drats[1]:
+        elif self.X.qRC_Input_phoIso_ > 0. and pPeak_data>pPeak_mc and r<=drats[1]:
             shifted = 0.
         else:
             shifted = self.X.qRC_Input_phoIso_
@@ -59,7 +59,9 @@ class computeCorrection_tmva_Iso:
 
 def applyFinalRegressionsIso_tmva(var,df,scaler,weightsFinalReg,weightsFinalTailReg,weightsDataClf,weightsMcClf,leg2016):
     
-    columns = ["probePt","probeScEta","probePhi","rho","probePhoIso"]
-    row=df[columns].values
+    # columns = ["probePt","probeScEta","probePhi","rho","probePhoIso"]
+    # row=df[columns].values
+    row=df
     correction = np.apply_along_axis(computeCorrection_tmva_Iso(scaler.center_[0],scaler.scale_[0],weightsFinalReg,weightsFinalTailReg,weightsDataClf,weightsMcClf,leg2016),1,row)
-    df['{}_corr_tmva'.format(var)] = correction.ravel()
+    return correction
+    # df['{}_corr_tmva'.format(var)] = correction.ravel()

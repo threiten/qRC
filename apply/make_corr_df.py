@@ -2,6 +2,7 @@ import qRC.python.quantileRegression_chain_disc as qRCd
 import numpy as np
 import argparse
 import yaml
+import root_pandas
 
 def main(options):
 
@@ -17,14 +18,30 @@ def main(options):
     finalWeightsDirs = inp['finalWeightsDirs']
 
     if year == '2017':
-        cols=["mass","probeScEnergy","probeScEta","probePhi","run","weight","weight_clf","rho","probeR9","probeSigmaIeIe","probePhiWidth","probeEtaWidth","probeCovarianceIeIp","probeCovarianceIpIp","probeS4","probePhoIso","probeChIso03","probeChIso03worst","probeSigmaRR","probeScPreshowerEnergy","probePt"]
+        cols=["mass","probeScEnergy","probeScEta","probePhi","run","weight","weight_clf","rho","probeR9","probeSigmaIeIe","probePhiWidth","probeEtaWidth","probeCovarianceIeIp","probeCovarianceIpIp","probeS4","probePhoIso","probeChIso03","probeChIso03worst","probeSigmaRR","probeScPreshowerEnergy","probePt","tagPt","probePassEleVeto","tagScEta","probePass_invEleVeto"]
+        treenameMC = '/tagAndProbeDumper/trees/DYJetsToLL_amcatnloFXFX_13TeV_All'
+    elif year == '2018':
+        cols=["mass","probeScEnergy","probeScEta","probePhi","run","weight","weight_clf","rho","probeR9","probeSigmaIeIe","probePhiWidth","probeEtaWidth","probeCovarianceIeIp","probeCovarianceIpIp","probeS4","probePhoIso","probeChIso03","probeChIso03worst","probeSigmaRR","probePt","tagPt","probePassEleVeto","tagScEta"]
+        treenameMC = '/tagAndProbeDumper/trees/DYJetsToLL_amcatnloFXFX_13TeV_All'
     elif year == '2016':
-        cols=["mass","probeScEnergy","probeScEta","probePhi","run","weight","weight_clf","rho","probeR9","probeSigmaIeIe","probePhiWidth","probeEtaWidth","probeCovarianceIetaIphi","probeCovarianceIphiIphi","probeS4","probePhoIso","probeChIso03","probeChIso03worst","probeSigmaRR","probeScPreshowerEnergy","probePt"]
+        cols=["mass","probeScEnergy","probeScEta","probePhi","run","weight","weight_clf","rho","probeR9","probeSigmaIeIe","probePhiWidth","probeEtaWidth","probeCovarianceIetaIphi","probeCovarianceIphiIphi","probeS4","probePhoIso","probeChIso03","probeChIso03worst","probeSigmaRR","probeScPreshowerEnergy","probePt","tagPt","probePassEleVeto","tagScEta","probePass_invEleVeto"]
+        treenameMC = '/tagAndProbeDumper/trees/DYJets_madgraph_13TeV_All'
 
-
+    EBEE_cut = 'abs(probeScEta)<1.4442' if options.EBEE == 'EB' else 'abs(probeScEta)>1.556'
+        
     qRC = qRCd.quantileRegression_chain(year,options.EBEE,workDir,showerShapes)
-    qRC.loadMCDF(dataframes['mc'][options.EBEE]['input'],0,options.n_evts,columns=cols)
-    qRC.loadDataDF(dataframes['data'][options.EBEE]['input'],0,options.n_evts,columns=cols)
+    if dataframes['mc'][options.EBEE]['input'].split('.')[-1] == 'root':
+        cols.pop(cols.index("weight_clf"))
+        qRC.MC = root_pandas.read_root(dataframes['mc'][options.EBEE]['input'],treenameMC,columns=cols).query(EBEE_cut)
+    else:
+        qRC.loadMCDF(dataframes['mc'][options.EBEE]['input'],0,options.n_evts,columns=cols)
+        
+    if dataframes['data'][options.EBEE]['input'].split('.')[-1] == 'root':
+        if "weight_clf" in cols:
+            cols.pop(cols.index("weight_clf"))
+        qRC.data = root_pandas.read_root(dataframes['data'][options.EBEE]['input'],'/tagAndProbeDumper/trees/Data_13TeV_All',columns=cols).query(EBEE_cut)
+    else:
+        qRC.loadDataDF(dataframes['data'][options.EBEE]['input'],0,options.n_evts,columns=cols)
 
     if options.backend is not None:
         qRC.setupJoblib(options.backend,cluster_id = options.clusterid)
@@ -75,6 +92,15 @@ def main(options):
         if year == '2017':
             weights = ("/mnt/t3nfs01/data01/shome/threiten/QReg/ReReco17_data/camp_3_1_0/PhoIdMVAweights/HggPhoId_94X_barrel_BDT_v2.weights.xml","/mnt/t3nfs01/data01/shome/threiten/QReg/ReReco17_data/camp_3_1_0/PhoIdMVAweights/HggPhoId_94X_endcap_BDT_v2.weights.xml")
             leg2016=False
+        if year == '2018':
+            weights = ("/mnt/t3nfs01/data01/shome/threiten/QReg/ReReco17_data/camp_3_1_0/PhoIdMVAweights/HggPhoId_94X_barrel_BDT_v2.weights.xml","/mnt/t3nfs01/data01/shome/threiten/QReg/ReReco17_data/camp_3_1_0/PhoIdMVAweights/HggPhoId_94X_endcap_BDT_v2.weights.xml")
+            leg2016=False
+            if options.EBEE == 'EB':
+                qRC_ChI.data['probeScPreshowerEnergy'] = -999.*np.ones(qRC_ChI.data.index.size)
+                qRC_ChI.MC['probeScPreshowerEnergy'] = -999.*np.ones(qRC_ChI.MC.index.size)
+            elif options.EBEE == 'EE':
+                qRC_ChI.data['probeScPreshowerEnergy'] = np.zeros(qRC_ChI.data.index.size)
+                qRC_ChI.MC['probeScPreshowerEnergy'] = np.zeros(qRC_ChI.MC.index.size)
         elif year == '2016':
             weights = ("/mnt/t3nfs01/data01/shome/threiten/QReg/ReReco16/PhoIdMVAweights/HggPhoId_barrel_Moriond2017_wRhoRew.weights.xml","/mnt/t3nfs01/data01/shome/threiten/QReg/ReReco16/PhoIdMVAweights/HggPhoId_endcap_Moriond2017_wRhoRew.weights.xml")
             leg2016=True

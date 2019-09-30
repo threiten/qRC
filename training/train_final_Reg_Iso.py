@@ -1,6 +1,6 @@
 import argparse
 import yaml
-import qRC.python.quantileRegression_chain as QReg_C
+import qRC.python.quantileRegression_chain_disc as QReg_D
 
 
 def main(options):
@@ -22,22 +22,25 @@ def main(options):
         df_name_mc = df_name_mc + '_spl{}_1M.h5'.format(options.split)
         weightsDir = weightsDir + '/spl{}'.format(options.split)
         outDir = outDir + '/spl{}'.format(options.split)
+        
+    columns = ['probePt','probeScEta','probePhi','rho'] + variables
 
-    if year == '2017':
-        columns = ['probePt','probeScEta','probePhi','rho','probeEtaWidth','probeSigmaIeIe','probePhiWidth','probeR9','probeS4','probeCovarianceIeIp']
-    elif year == '2018':
-        columns = ['probePt','probeScEta','probePhi','rho','probeEtaWidth','probeSigmaIeIe','probePhiWidth','probeR9','probeS4','probeCovarianceIeIp']
-    elif year == '2016':
-        columns = ['probePt','probeScEta','probePhi','rho','probeEtaWidth','probeSigmaIeIe','probePhiWidth','probeR9','probeS4','probeCovarianceIetaIphi']
-
-    qRC = QReg_C.quantileRegression_chain(year,options.EBEE,workDir,variables)
+    qRC = QReg_D.quantileRegression_chain_disc(year,options.EBEE,workDir,variables)
     qRC.loadMCDF(df_name_mc,0,options.n_evts,rsh=False,columns=columns)
+    
     if options.backend is not None:
         qRC.setupJoblib(options.backend,cluster_id=options.clusterid)
+        
     for var in qRC.vars:
-        qRC.loadClfs(var,weightsDir)
-        qRC.correctY(var,n_jobs=options.n_jobs)
-        qRC.trainFinalRegression(var,weightsDir=outDir,n_jobs=options.n_jobs)
+        qRC.trainFinalTailRegressor(var, weightsDir=outDir, weightsDirIn=weightsDir, n_jobs=options.n_jobs)
+        if len(variables) == 1:
+            qRC.loadp0tclf(variables[0],weightsDir=weightsDir)
+        elif len(variables) > 1:
+            qRC.load3Catclf(variables, weightsDir = weightsDir)
+        qRC.loadClfs(var, weightsDir = weightsDir)
+        qRC.correctY(var, n_jobs = options.n_jobs)
+        qRC.trainFinalRegression(var, weightsDir=outDir, n_jobs=options.n_jobs)
+
 
 if __name__ == "__main__":
 
@@ -53,4 +56,3 @@ if __name__ == "__main__":
     optionalArgs.add_argument('-i','--clusterid', action='store', type=str)
     options=parser.parse_args()
     main(options)
-    

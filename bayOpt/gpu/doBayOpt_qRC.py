@@ -52,7 +52,7 @@ class var_test_function(object):
         return self.test_function_int(max_depth,gamma,reg_lambda,reg_alpha,min_child_weight,subsample,n_estimators)
 
 def main(options):
-    df = pd.read_hdf('/work/threiten/QReg/ReReco16/probePS/df_mc_EB_train_corr_1M.h5',columns=['probePt','probeScEta','probePhi','rho','probeCovarianceIetaIphi','probeS4','probeR9','probePhiWidth','probeSigmaIeIe','probeEtaWidth','probeCovarianceIetaIphi_corr','probeS4_corr','probeR9_corr','probePhiWidth_corr','probeSigmaIeIe_corr','probeEtaWidth_corr','probePhoIso','probeChIso03','probeChIso03worst','probePhoIso_corr','probeChIso03_corr','probeChIso03worst_corr'])
+    df = pd.read_hdf('/work/threiten/QReg/ReReco18ABCPromptD/df_mc_EB_train_corr_5M.h5',columns=['probePt','probeScEta','probePhi','rho','probeCovarianceIeIp','probeS4','probeR9','probePhiWidth','probeSigmaIeIe','probeEtaWidth','probeCovarianceIeIp_corr','probeS4_corr','probeR9_corr','probePhiWidth_corr','probeSigmaIeIe_corr','probeEtaWidth_corr','probePhoIso','probeChIso03','probeChIso03worst','probePhoIso_corr','probeChIso03_corr','probeChIso03worst_corr'])
 
     pbounds = {'max_depth': (3,15), 'gamma': (0,10), 'reg_lambda': (0,10), 'reg_alpha': (0,10), 'min_child_weight': (1,1000), 'subsample': (0.5,1), 'n_estimators': (1000,5000)}
     if options.variable == "probePhoIso":
@@ -62,7 +62,7 @@ def main(options):
         features = ['probePt','probeScEta','probePhi','rho','probeChIso03','probeChIso03worst']
         diz = True
     else:
-        features = ['probePt','probeScEta','probePhi','rho','probeCovarianceIetaIphi','probeS4','probeR9','probePhiWidth','probeSigmaIeIe','probeEtaWidth']
+        features = ['probePt','probeScEta','probePhi','rho','probeCovarianceIeIp','probeS4','probeR9','probePhiWidth','probeSigmaIeIe','probeEtaWidth']
         diz = False
     optimizer = BayesianOptimization(f = var_test_function(df,options.variable,features,diz,options.n_jobs).test_function, pbounds = pbounds, verbose=2)
 

@@ -17,7 +17,7 @@ def main(options):
 
     if options.split is not None:
         print 'Using split dfs for training two sets of weights!'
-        df_name = df_name + '_spl{}_1M.h5'.format(options.split)
+        df_name = df_name + '_spl{}.h5'.format(options.split)
         weightsDir = weightsDir + '/spl{}'.format(options.split)
 
     if year == '2017' or year == '2018':

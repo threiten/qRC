@@ -17,8 +17,8 @@ def main(options):
 
     if options.split is not None:
         print 'Using split dfs for training two sets of weights!'
-        df_name_data = df_name_data + '_spl{}_1M.h5'.format(options.split)
-        df_name_mc = df_name_mc + '_spl{}_1M.h5'.format(options.split)
+        df_name_data = df_name_data + '_spl{}.h5'.format(options.split)
+        df_name_mc = df_name_mc + '_spl{}.h5'.format(options.split)
         weightsDir = weightsDir + '/spl{}'.format(options.split)
 
     qRC = QReg_C.quantileRegression_chain(year,options.EBEE,workDir,variables)
