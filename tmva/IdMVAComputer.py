@@ -38,44 +38,50 @@ class IdMvaComputer:
          
       # make list of input columns
       if self.tpC=="qr":
-         print "Using variables corrected by quantile regression"
+         print("Using variables corrected by quantile regression")
          self.columns = map(lambda x: x+"_corr" if x in correct else x, columns)
-         print self.columns
+         print(self.columns)
          
       elif self.tpC=="final":
-         print "Using variables corrected by final regression"
+         print("Using variables corrected by final regression")
          self.columns = map(lambda x: x+"_corr_1Reg" if x in correct else x, columns)
-         print self.columns
+         print(self.columns)
+
+      elif self.tpC=="uncorr":
+         print("Using uncorrected variables from flashgg")
+         self.columns = ['{}_uncorr'.format(x) if x in correct else x for x in columns]
+         # self.columns = map(lambda x: x+"_uncorr" if x in correct else x, columns)
+         print(self.columns)
 
       elif self.tpC=="old":
-         print "Using variables corrected by old method"
+         print("Using variables corrected by old method")
          self.columns = map(lambda x: x+"_old_corr" if x in correct else x, columns)
-         print self.columns
+         print(self.columns)
 
       elif self.tpC=="data":
-         print "Using uncorrected variables"
+         print("Using uncorrected variables")
          self.columns = columns
-         print self.columns
+         print(self.columns)
 
       elif self.tpC=="n-1qr":
-         print "Using variables corrected by N-1 quantile regression"
+         print("Using variables corrected by N-1 quantile regression")
          self.columns = map(lambda x: x+"_corr_corrn-1" if x in correct else x, columns)
-         print self.columns
+         print(self.columns)
 
       elif self.tpC=="n-1qrnc":
-         print "Using variables corrected by N-1 nc quantile regression"
+         print("Using variables corrected by N-1 nc quantile regression")
          self.columns = map(lambda x: x+"_corrn-1" if x in correct else x, columns)
-         print self.columns
+         print(self.columns)
 
       elif self.tpC=="I2qr":
-         print "Using variables corrected by I2 quantile regression"
+         print("Using variables corrected by I2 quantile regression")
          self.columns = map(lambda x: x+"_corr_corrn-1_corr" if x in correct else x, columns)
-         print self.columns
+         print(self.columns)
       
       elif self.tpC=="I2n-1qr":
-         print "Using variables corrected by I2 N-1 quantile regression"
+         print("Using variables corrected by I2 N-1 quantile regression")
          self.columns = map(lambda x: x+"_corr_corrn-1_corr_corrn-1" if x in correct else x, columns)
-         print self.columns
+         print(self.columns)
       
    def __call__(self,X):
 

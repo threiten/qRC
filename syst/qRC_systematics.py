@@ -170,21 +170,21 @@ class systematics(object):
     def applShifts(self, stat_corr):
 
         args = [stat_corr]
-        shifted = np.apply_along_axis(self.multiShift,0,self.df['newPhoIDtrcorrAll'].values, *args).T
+        shifted = np.apply_along_axis(self.multiShift,0,self.df['probePhoIdMVAtr'].values, *args).T
         for i in range(self.shifts.shape[0]):
-            self.df['newPhoIDtrcorrAll_shift{}'.format(i)] = shifted[i]
+            self.df['probePhoIdMVAtr_shift{}'.format(i)] = shifted[i]
 
     def getBand(self, bins, weights, cutoff):
 
         self.bins = np.array(bins)
 
-        mat = self.df.loc[:,['newPhoIDtrcorrAll_shift{}'.format(i) for i in range(self.shifts.shape[0])]].values
+        mat = self.df.loc[:,['probePhoIdMVAtr_shift{}'.format(i) for i in range(self.shifts.shape[0])]].values
         self.mini, self.maxi = utils.findBand(mat, bins, weights, cutoff)
 
     def plotBand(self, df_data, saveDir=None, cut=None, label=None, zoom=False):
 
         dic = {}
-        dic['var'] = 'newPhoIDtrcorrAll'
+        dic['var'] = 'probePhoIdMVAtr'
         dic['bins'] = self.bins.shape[0]-1
         dic['xmin'] = self.bins.min()
         dic['xmax'] = self.bins.max()
@@ -199,7 +199,7 @@ class systematics(object):
             cutBool = True
             label = label + ' EB' if 'abs(probeScEta)<1.4442' in cut else label + ' EE'
  
-        df_data['newPhoIDtrcorrAll'] = df_data['newPhoIDtr']
+        # df_data['probePhoIdMVAtr'] = df_data['newPhoIDtr']
         plltt = pldmc.plot_dmc_hist(self.df, df_data, ratio=True, norm=True, cut_str='', label=label, **dic)
         plltt.draw()
         
@@ -226,16 +226,16 @@ class systematics(object):
     def saveSystFile(self, ofile, df_data):
 
         for i in [0,19]:
-                self.df['newPhoIDcorrAll_shift{}'.format(i)] = utils.get_quantile(self.df,df_data,'newPhoIDtrcorrAll_shift{}'.format(i),'newPhoID',weights='weight',inv=True)
+                self.df['probePhoIdMVA_shift{}'.format(i)] = utils.get_quantile(self.df,df_data,'probePhoIdMVAtr_shift{}'.format(i),'probePhoIdMVA',weights='weight',inv=True)
 
-        self.df['newPhoIDcorrAll_bin'],bins = pd.qcut(self.df.loc[self.df['newPhoIDcorrAll_shift19']<999,'newPhoIDcorrAll'],q=1000,labels=np.arange(1000),retbins=True)
-        groupby = self.df.groupby(self.df['newPhoIDcorrAll_bin'])
+        self.df['probePhoIdMVA_bin'],bins = pd.qcut(self.df.loc[self.df['probePhoIdMVA_shift19']<999,'probePhoIdMVA'],q=1000,labels=np.arange(1000),retbins=True)
+        groupby = self.df.groupby(self.df['probePhoIdMVA_bin'])
         x = 0.5*(bins[1:]+bins[:-1])
         x = np.append(x, [1,9999])
         x = np.insert(x, 0, [-9999,-1])
 
-        y_down = np.array([groupby.get_group(i)['newPhoIDcorrAll_shift0'].median() for i in np.arange(1000)])
-        y_up = np.array([groupby.get_group(i)['newPhoIDcorrAll_shift19'].median() for i in np.arange(1000)])
+        y_down = np.array([groupby.get_group(i)['probePhoIdMVA_shift0'].median() for i in np.arange(1000)])
+        y_up = np.array([groupby.get_group(i)['probePhoIdMVA_shift19'].median() for i in np.arange(1000)])
 
         y_down = np.append(y_down, [1,9999])
         y_down = np.insert(y_down, 0, [-9999,-1])

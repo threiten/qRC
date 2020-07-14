@@ -1,25 +1,27 @@
 import pandas as pd
 import numpy as np
 import argparse
-# import matplotlib
-# matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 import plotting.plot_dmc_hist as pldmc
 import qRC.syst.qRC_systematics as syst
+import root_pandas
 
 def plotOrig(systs, df_data, saveDir, cut=None, label=None, zoom=False):
 
     for i in range(systs.shifts.shape[0]):
-        systs.df['newPhoIDcorrAll_shift{}'.format(i)] = syst.utils.get_quantile(systs.df, df_data, 'newPhoIDtrcorrAll_shift{}'.format(i),'newPhoID', weights='weight', inv=True)
+        systs.df['probePhoIdMVA_shift{}'.format(i)] = syst.utils.get_quantile(systs.df, df_data, 'probePhoIdMVAtr_shift{}'.format(i),'probePhoIdMVA', weights='weight', inv=True)
 
-    matOrig = systs.df.loc[:,['newPhoIDcorrAll_shift{}'.format(i) for i in range(systs.shifts.shape[0])]].values
+    matOrig = systs.df.loc[:,['probePhoIdMVA_shift{}'.format(i) for i in range(systs.shifts.shape[0])]].values
     mini, maxi = syst.utils.findBand(matOrig, np.linspace(-1,1,101), systs.df['weight_clf'])
-    
-    df_data['newPhoIDcorrAll'] = df_data['newPhoID']
+    mini = mini[10:]
+    maxi = maxi[10:]
+    # df_data['probePhoIdMVA'] = df_data['probePhoIdMVA']
     
     dic = {}
-    dic['var'] = 'newPhoIDcorrAll'
-    dic['bins'] = 100
-    dic['xmin'] = -1
+    dic['var'] = 'probePhoIdMVA'
+    dic['bins'] = 90
+    dic['xmin'] = -0.8
     dic['xmax'] = 1
     dic['weightstr_mc'] = 'weight_clf'
     dic['ratio_lim'] = (0.5,1.5) if not zoom else (0.9,1.1)
@@ -58,8 +60,18 @@ def main(options):
     
     df1 = pd.read_hdf(options.systfile1)
     df2 = pd.read_hdf(options.systfile2)
-    df_in = pd.read_hdf(options.infile)
-    df_data = pd.read_hdf(options.dataFile)
+
+    columns = ['weight','probePt','probeScEta','probePhi','rho','probePhoIdMVA','probeScEta','tagPt','mass','probePassEleVeto','tagScEta']
+    
+    if 'root' == options.infile.split('.')[-1]:
+        df_in = root_pandas.read_root(options.infile,columns=columns)
+    else:
+        df_in = pd.read_hdf(options.infile)
+        
+    if 'root' == options.infile.split('.')[-1]:
+        df_data = root_pandas.read_root(options.dataFile,columns=columns)
+    else:
+        df_data = pd.read_hdf(options.dataFile)
 
     label = 'IdMVA syst'
     if options.cut is not None:
@@ -67,8 +79,8 @@ def main(options):
         df_data.query(options.cut, inplace=True, engine='python')
         label = label + ' EB' if 'abs(probeScEta)<1.4442' in options.cut else label + ' EE'
         
-    if 'newPhoIDtrcorrAll' not in df_in.columns:
-        df_in['newPhoIDtrcorrAll'] = syst.utils.get_quantile(df_in,df_data,'newPhoIDcorrAll','newPhoID',weights='weight')
+    if 'probePhoIdMVAtr' not in df_in.columns:
+        df_in['probePhoIdMVAtr'] = syst.utils.get_quantile(df_in,df_data,'probePhoIdMVA','probePhoIdMVA',weights='weight')
 
     if 'weight_clf' not in df_in.columns or options.forceReweight:
         df_in['weight_clf'] = syst.utils.clf_reweight(df_in, df_data, n_jobs=10, cut=options.cut)
@@ -78,11 +90,11 @@ def main(options):
     #     df1['weight_clf'] = syst.utils.clf_reweight(df1, df_data, n_jobs=10, cut=options.cut)
     #     df2['weight_clf'] = syst.utils.clf_reweight(df2, df_data, n_jobs=10, cut=options.cut)
 
-    df1['newPhoIDtrcorrAll'] = syst.utils.get_quantile(df1,df_data,'newPhoIDcorrAll','newPhoID',weights='weight')
-    df2['newPhoIDtrcorrAll'] = syst.utils.get_quantile(df2,df_data,'newPhoIDcorrAll','newPhoID',weights='weight')
-    df1['newPhoIDtr'] = syst.utils.get_quantile(df1,df_data,'newPhoID','newPhoID',weights='weight')
-    df2['newPhoIDtr'] = syst.utils.get_quantile(df2,df_data,'newPhoID','newPhoID',weights='weight')
-    df_data['newPhoIDtr'] = syst.utils.get_quantile(df_data,df_data,'newPhoID','newPhoID',weights='weight')
+    df1['newPhoIDtrcorrAll'] = syst.utils.get_quantile(df1,df_data,'newPhoIDcorrAll','probePhoIdMVA',weights='weight')
+    df2['newPhoIDtrcorrAll'] = syst.utils.get_quantile(df2,df_data,'newPhoIDcorrAll','probePhoIdMVA',weights='weight')
+    df1['newPhoIDtr'] = syst.utils.get_quantile(df1,df_data,'newPhoID','probePhoIdMVA',weights='weight')
+    df2['newPhoIDtr'] = syst.utils.get_quantile(df2,df_data,'newPhoID','probePhoIdMVA',weights='weight')
+    df_data['probePhoIdMVAtr'] = syst.utils.get_quantile(df_data,df_data,'probePhoIdMVA','probePhoIdMVA',weights='weight')
 
     shiftFctnDic = {'para': syst.utils.para, 'poly3': syst.utils.poly3, 'poly4': syst.utils.poly4}
     
