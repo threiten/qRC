@@ -5,7 +5,7 @@ from joblib import delayed, Parallel
 class IdMvaComputer:
 
    def __init__(self,weightsEB,weightsEE,correct=[],tpC='qr',leg2016=False):
-      rt.gROOT.LoadMacro("/mnt/t3nfs01/data01/shome/threiten/QReg/dataMC-1/MTR/phoIDMVAonthefly.C")
+      rt.gROOT.LoadMacro("./phoIDMVAonthefly.C")
       
       self.rhoSubtraction = False
       # if type(correct) == dict:

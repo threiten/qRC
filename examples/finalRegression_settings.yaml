@@ -1,0 +1,9 @@
+probeR9: {'gamma': 1.6139924171886166, 'max_depth': 12, 'min_child_weight': 199, 'n_estimators': 1462, 'reg_alpha': 9.47241283820543, 'reg_lambda': 2.136625960469245, 'subsample': 0.9446391052208177}
+probeS4: {'gamma': 4.664293922268814, 'max_depth': 10, 'min_child_weight': 200, 'n_estimators': 1242, 'reg_alpha': 8.34044229932121, 'reg_lambda': 3.2751304375396018, 'subsample': 0.8067727045161104}
+probeCovarianceIeIp: {'gamma': 7.709128554510915, 'max_depth': 14, 'min_child_weight': 197, 'n_estimators': 1609, 'reg_alpha': 9.294728091714886, 'reg_lambda': 9.14527469231459, 'subsample': 0.9386454512217091}
+probeSigmaIeIe: {'gamma': 0.059573570027238176, 'max_depth': 7, 'min_child_weight': 61, 'n_estimators': 1138, 'reg_alpha': 8.34759810269048, 'reg_lambda': 2.14326678578167, 'subsample': 0.8476171218697053}
+probePhiWidth: {'gamma': 3.2589616894094564, 'max_depth': 15, 'min_child_weight': 199, 'n_estimators': 1691, 'reg_alpha': 9.069137324153187, 'reg_lambda': 9.427721193090054, 'subsample': 0.8294580339482043}
+probeEtaWidth: {'gamma': 5.214855370788534, 'max_depth': 13, 'min_child_weight': 200, 'n_estimators': 1001, 'reg_alpha': 4.760161920049572, 'reg_lambda': 8.897401359690681, 'subsample': 0.5791964428009132}
+probePhoIso: {'gamma': 8.284842189748547, 'max_depth': 5, 'min_child_weight': 1.4151546270156594, 'n_estimators': 4743, 'reg_alpha': 9.499316582660246, 'reg_lambda': 7.341649873133545, 'subsample': 0.8904802684349995}
+probeChIso03: {'gamma': 8.933567588250566e-10, 'max_depth': 15, 'min_child_weight': 200, 'n_estimators': 1608, 'reg_alpha': 10.0, 'reg_lambda': 10.0, 'subsample': 1.0}
+probeChIso03worst: {'gamma': 4.211962150624488, 'max_depth': 14, 'min_child_weight': 194, 'n_estimators': 1873, 'reg_alpha': 9.588628240248791, 'reg_lambda': 1.365668221565155, 'subsample': 0.526682087843831}
