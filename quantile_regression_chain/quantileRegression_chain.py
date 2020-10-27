@@ -8,15 +8,17 @@ import gzip
 import yaml
 import os
 import ROOT as rt
-from root_pandas import read_root
+import uproot4
 
 from joblib import delayed, Parallel, parallel_backend, register_parallel_backend
 
-from ..tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
-from ..tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
-from Corrector import Corrector, applyCorrection
+from .tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
+from .tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
+from .Corrector import Corrector, applyCorrection
 #from sklearn.externals.joblib import Parallel, parallel_backend, register_parallel_backend
 
+import logging
+logger = logging.getLogger(__name__)
 
 class quantileRegression_chain(object):
     """
@@ -31,11 +33,11 @@ class quantileRegression_chain(object):
     :param varrs: List of variables to correct. Has to be ordered in the way the correction is to be preformed
     :type varrs: list
     """
-    
+
     def __init__(self,year,EBEE,workDir,varrs):
-        
+
         self.year = year
-        self.workDir = workDir
+        self.workDir = os.path.abspath(workDir)
         self.kinrho = ['probePt','probeScEta','probePhi','rho']
         if not type(varrs) is list:
             varrs=list((varrs,))
@@ -43,7 +45,7 @@ class quantileRegression_chain(object):
         self.quantiles = [0.01,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99]
         self.backend = 'loky'
         self.EBEE = EBEE
-        self.branches = ['probeScEta','probeEtaWidth','probeR9','weight','probeSigmaRR','tagChIso03','probeChIso03','probeS4','tagR9','tagPhiWidth','probePt','tagSigmaRR','probePhiWidth','probeChIso03worst','puweight','tagEleMatch','tagPhi','probeScEnergy','nvtx','probePhoIso','tagPhoIso','run','tagScEta','probeEleMatch','probeCovarianceIeIp','tagPt','rho','tagS4','tagSigmaIeIe','tagCovarianceIpIp','tagCovarianceIeIp','tagScEnergy','tagChIso03worst','probeSigmaIeIe','probePhi','mass','probeCovarianceIpIp','tagEtaWidth','probeHoE','probeFull5x5_e1x5','probeFull5x5_e5x5','probeNeutIso','probePassEleVeto']
+        self.branches = ['probeScEta','probeEtaWidth','probeR9','weight','probeSigmaRR','tagChIso03','probeChIso03','probeS4','tagR9','tagPhiWidth_Sc','probePt','tagSigmaRR','probePhiWidth','probeChIso03worst','puweight','tagEleMatch','tagPhi','probeScEnergy','nvtx','probePhoIso','tagPhoIso','run','tagScEta','probeEleMatch','probeCovarianceIeIp','tagPt','rho','tagS4','tagSigmaIeIe','tagCovarianceIpIp','tagCovarianceIeIp','tagScEnergy','tagChIso03worst','probeSigmaIeIe','probePhi','mass','probeCovarianceIpIp','tagEtaWidth_Sc','probeHoE','probeFull5x5_e1x5','probeFull5x5_e5x5','probeNeutIso','probePassEleVeto']
 
         if year == '2016':
             self.branches = self.branches + ['probePass_invEleVeto','probeCovarianceIetaIphi','probeCovarianceIphiIphi','probeCovarianceIetaIphi','probeCovarianceIphiIphi']
@@ -61,7 +63,7 @@ class quantileRegression_chain(object):
 
     def loadROOT(self,path,tree,outname,cut=None,split=None,rndm=12345):
         """
-        Method to load a *.root dataset. Selects events in Barrel or Endcap only, depending on how class was initialized. 
+        Method to load a *.root dataset. Selects events in Barrel or Endcap only, depending on how class was initialized.
         Also possible to split dataset into training and testing datasets. The dataset(s) is stored as a pandas dataframe
         in *.hd5 format.
         Arguments
@@ -70,7 +72,7 @@ class quantileRegression_chain(object):
             Path to the *.root file to be read
         tree : string
             Path to the root tree to be read with in the *.root file
-        outname : string 
+        outname : string
             Name to be used for the *.h5 file. Suffix is added automatically.
         cut : string, default ``None``
             Additional cut to apply while selecting events
@@ -83,52 +85,57 @@ class quantileRegression_chain(object):
         df: pandas dataframe
             Dataframe from read *.root file
         """
-        
+
+        root_file = uproot4.open(path)
+        up_tree = root_file[tree]
+
         if self.year == '2016' and 'Data' not in tree:
-            df = read_root(path,tree,columns=self.branches+['probePhoIso_corr'])
+            df = up_tree.arrays(self.branches + ['probePhoIso_corr'], library = 'pd')
         else:
-            df = read_root(path,tree,columns=self.branches)
-        
-        print 'Dataframe with columns {}'.format(df.columns)
+            df = up_tree.arrays(self.branches, library = 'pd')
+
+        logger.info('Dataframe with columns {}'.format(df.columns))
         index = np.array(df.index)
-        
-        print 'Reshuffling events'
+
+        logger.info('Reshuffling events')
         np.random.seed(rndm)
         np.random.shuffle(index)
-        df = df.ix[index]
+        df = df.iloc[index]
 
         df.query('probePt>@self.ptmin and probePt<@self.ptmax and probeScEta>@self.etamin and probeScEta<@self.etamax and probePhi>@self.phimin and probePhi<@self.phimax',inplace=True)
 
         if self.EBEE == 'EB':
-            print 'Selecting events from EB'
+            logger.info('Selecting events from EB')
             df.query('probeScEta>-1.4442 and probeScEta<1.4442',inplace=True)
         elif self.EBEE == 'EE':
-            print 'Selecting events from EE'
+            logger.info('Selecting events from EE')
             df.query('probeScEta<-1.556 or probeScEta>1.556',inplace=True)
-        
-        
+
+
         if cut is not None:
-            print 'Applying cut {}'.format(cut)
+            logger.info('Applying cut {}'.format(cut))
             df.query(cut,inplace=True)
-        
+
         df.reset_index(drop=True, inplace=True)
 
         if self.year=='2016' and not 'Data' in tree:
             df['probePhoIso_corr_sto'] = df['probePhoIso_corr']
-            
+
         if split is not None:
-            print 'Splitting dataframe in train and test sample. Split size is at {}%'.format(int(split*100))
+            logger.info('Splitting dataframe in train and test sample. Split size is at {}%'.format(int(split*100)))
             df_train = df[0:int(split*df.index.size)]
             df_test = df[int(split*df.index.size):]
-            print 'Number of events in training dataframe {}. Saving to {}/{}_(train/test).h5'.format(df_train.index.size,self.workDir,outname)
+            logger.info('Number of events in training dataframe {}. Saving to {}/{}_(train/test).h5'.format(
+                df_train.index.size,self.workDir,outname))
             df_train.to_hdf('{}/{}_train.h5'.format(self.workDir,outname),'df',mode='w',format='t')
             df_test.to_hdf('{}/{}_test.h5'.format(self.workDir,outname),'df',mode='w',format='t')
         else:
-            print 'Number of events in dataframe {}. Saving to {}/{}.h5'.format(df.index.size,self.workDir,outname)
+            logger.info('Number of events in dataframe {}. Saving to {}/{}.h5'.format(
+                df.index.size,self.workDir,outname))
             df.to_hdf('{}/{}.h5'.format(self.workDir,outname),'df',mode='w',format='t')
-            
+
         return df
-        
+
     def _loadDF(self, h5name, start=0, stop=-1, rndm=12345, rsh=False, columns=None):
         """
         Internal Method to load a dataframe from a hd5 file. Use ``loadMCDF`` to load MC dataframe of ``loadDataDF``
@@ -151,15 +158,15 @@ class quantileRegression_chain(object):
         -------
         df: pandas dataframe
         """
-        
+
         if rsh:
             df = pd.read_hdf('{}/{}'.format(self.workDir,h5name), 'df', columns=columns)
         else:
             df = pd.read_hdf('{}/{}'.format(self.workDir,h5name), 'df', columns=columns, start=start, stop=stop)
-        
+
         index = np.array(df.index)
         if rsh:
-            print 'Reshuffling events'
+            logger.info('Reshuffling events')
             np.random.seed(rndm)
             np.random.shuffle(index)
             df = df.ix[index]
@@ -174,7 +181,7 @@ class quantileRegression_chain(object):
             df.query('probeScEta>-1.4442 and probeScEta<1.4442',inplace=True)
         elif self.EBEE == 'EE' and df[abs(df['probeScEta']<1.556)].index.size>0:
             df.query('probeScEta<-1.556 or probeScEta>1.556',inplace=True)
-        
+
         if df.index.size==0:
             raise ValueError('Wrong dataframe selected!')
 
@@ -184,35 +191,35 @@ class quantileRegression_chain(object):
         """
         Method to load MC dataframe. See ``_loadDf`` for Arguments
         """
-        
-        print 'Loading MC Dataframe from: {}/{}'.format(self.workDir,h5name)
+
+        logger.info('Loading MC Dataframe from: {}/{}'.format(self.workDir,h5name))
         self.MC = self._loadDF(h5name,start,stop,rndm,rsh,columns)
-        
+
     def loadDataDF(self,h5name,start=0,stop=-1,rndm=12345,rsh=False,columns=None):
         """
         Method to load data dataframe. See ``_loadDf`` for Arguments
         """
-        
-        print 'Loading data Dataframe from: {}/{}'.format(self.workDir,h5name)
+
+        logger.info('Loading data Dataframe from: {}/{}'.format(self.workDir,h5name))
         self.data = self._loadDF(h5name,start,stop,rndm,rsh,columns)
 
     def trainOnData(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         """
         Method to train quantile regression BDTs on data. See ``_trainQuantiles`` for Arguments
         """
-        
+
         self._trainQuantiles('data',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
-        
+
     def trainOnMC(self,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         """
         Method to train quantile regression BDTs on MC. See ``_trainQuantiles`` for Arguments
         """
-        
+
         self._trainQuantiles('mc',var=var,maxDepth=maxDepth,minLeaf=minLeaf,weightsDir=weightsDir)
 
     def _trainQuantiles(self,key,var,maxDepth=5,minLeaf=500,weightsDir='/weights_qRC'):
         """
-        Internal method to train BDTs for quantile morphing. All trees for one variable are trained in parallel. 
+        Internal method to train BDTs for quantile morphing. All trees for one variable are trained in parallel.
         An ipcluster can be used a ipyparallel backend. Call ``register_parallel_backend`` to set this up.
         If no ipcluster is set up, loky backend will be used and spawn 21 processes locally. The trained BDTs will be
         pickled, zipped and stored in ``weightsDir```
@@ -227,12 +234,12 @@ class quantileRegression_chain(object):
         minLeaf : int, default 500
             Sets min_samples_leaf and min_samples_split in tree training
         weightsDir : str, default "/weights_qRC"
-            Directory the weight files will be saved to. Relative to ``workDir`` 
+            Directory the weight files will be saved to. Relative to ``workDir``
         """
-        
+
         if var not in self.vars+['{}_shift'.format(x) for x in self.vars]:
             raise ValueError('{} has to be one of {}'.format(var, self.vars))
-        
+
         if key.startswith('mc'):
             features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var)]]
             if 'diz' in key:
@@ -240,7 +247,7 @@ class quantileRegression_chain(object):
                 Y = self.MC.loc[self.MC[var]!=0,var]
             else:
                 X = self.MC.loc[:,features]
-                Y = self.MC.loc[:,var] 
+                Y = self.MC.loc[:,var]
 
         elif key.startswith('data'):
             features = self.kinrho + self.vars[:self.vars.index(var)]
@@ -255,15 +262,25 @@ class quantileRegression_chain(object):
 
         name_key = 'data' if 'data' in key else 'mc'
 
-        print 'Training quantile regression on {} for {} with features {}'.format(key,var,features)
+        logger.info('Training quantile regression on {} for {} with features {}'.format(key,var,features))
 
         with parallel_backend(self.backend):
-            Parallel(n_jobs=len(self.quantiles),verbose=20)(delayed(trainClf)(q,maxDepth,minLeaf,X,Y,save=True,outDir='{}/{}'.format(self.workDir,weightsDir),name='{}_weights_{}_{}_{}'.format(name_key,self.EBEE,var,str(q).replace('.','p')),X_names=features,Y_name=var) for q in self.quantiles)
+            Parallel(n_jobs=len(self.quantiles),verbose=20)(
+                    delayed(trainClf)(
+                        q,
+                        maxDepth,
+                        minLeaf,
+                        X,
+                        Y,
+                        save = True,
+                        outDir = weightsDir if weightsDir.startswith('/') else '{}/{}'.format(self.workDir,weightsDir),
+                        name ='{}_weights_{}_{}_{}'.format(name_key,self.EBEE,var,str(q).replace('.','p')),
+                        X_names = features,Y_name=var) for q in self.quantiles)
 
-        
+
     def correctY(self, var, n_jobs=1, diz=False):
         """
-        Medthod to apply correction for  one variable in MC. BDTs for data and MC have to be loaded first, 
+        Medthod to apply correction for  one variable in MC. BDTs for data and MC have to be loaded first,
         using ``loadClfs``.
         Make sure to load the right files, variable names are not checked. If ``n_jobs`` is bigger than 1,
         correction will be run in parallel, with ipcluster backend if available, otherwise loky
@@ -276,17 +293,17 @@ class quantileRegression_chain(object):
         diz : bool, defautl ``False``
             Specify if variable to be corrected is discontinuous. Only for ``quantileRegression_chain_disc``
         """
-        
+
         var_raw = var[:var.find('_')] if '_' in var else var
         features = self.kinrho + ['{}_corr'.format(x) for x in self.vars[:self.vars.index(var_raw)]]
         X = self.MC.loc[:,features]
         Y = self.MC[var]
-        
+
         if X.isnull().values.any():
             raise KeyError('Correct {} first!'.format(self.vars[:self.vars.index(var)]))
 
-        print "Features: X = ", features, " target y = ", var
-        
+        logger.info("Features: X = {}, target y = {}".format(features, var))
+
         Y = Y.values.reshape(-1,1)
         Z = np.hstack([X,Y])
 
@@ -298,7 +315,7 @@ class quantileRegression_chain(object):
     def trainFinalRegression(self,var,weightsDir,diz=False,n_jobs=1):
         """
         Method to train one BDT for final application of correction. Variable needs to be corrected
-        using ``correctY`` before. The training target is the scaled difference between corrected and 
+        using ``correctY`` before. The training target is the scaled difference between corrected and
         uncorrected values of the variable. Therefore a scaler is saved along with the trained BDT itself,
         both pickled and zipped. The parameters of the tree will be taken from ``finalRegression_settings.yaml``
         if available in ``weightsDir``, otherwise default settings are used.
@@ -311,13 +328,14 @@ class quantileRegression_chain(object):
         diz : bool, default ``False``
             Specifies if varible to train for is discontinuous. Only used by ``quantileRegression_chain_disc``
         n_jobs : int, default 1
-            Number of threads to be used for the training with XGBoost. This happens interally in XGBoost. 
+            Number of threads to be used for the training with XGBoost. This happens interally in XGBoost.
             An ipyparallel backend will not beused, even if set up.
         """
-        
+
         robSca = RobustScaler()
         features = self.kinrho + self.vars
         target = '{}_corr_diff_scale'.format(var)
+        weightsDir = weightsDir if weightsDir.startswith('/') else '{}/{}'.format(self.workDir, weightsDir)
 
         if diz:
             querystr = '{0}!=0 and {0}_corr!=0'.format(var)
@@ -327,30 +345,31 @@ class quantileRegression_chain(object):
         df = self.MC.query(querystr)
 
         df['{}_corr_diff_scale'.format(var)] = robSca.fit_transform(np.array(df['{}_corr'.format(var)] - df[var]).reshape(-1,1))
-        pkl.dump(robSca,gzip.open('{}/{}/scaler_mc_{}_{}_corr_diff.pkl'.format(self.workDir,weightsDir,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
+        pkl.dump(robSca,gzip.open('{}/scaler_mc_{}_{}_corr_diff.pkl'.format(weightsDir,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
 
         X = df.loc[:,features].values
         Y = df[target].values
 
         try:
-            settings = yaml.load(open('{}/{}/finalRegression_settings.yaml'.format(self.workDir,weightsDir)))
+            settings = yaml.load(open('{}/finalRegression_settings.yaml'.format(weightsDir)))
             clf = xgb.XGBRegressor(base_score=0.,n_jobs=n_jobs,**settings[var])
-            print('Custom settings loaded')
+            logger.info('Custom settings loaded')
         except (IOError,KeyError):
-            print('No custom settings found, training with standard settings')
+            logger.info('No custom settings found, training with standard settings')
             clf = xgb.XGBRegressor(n_estimators=1000, max_depth=10, gamma=0, base_score=0.,n_jobs=n_jobs)
 
-        print('Training final Regression for {} with features {}. Classifier:{}'.format(target,features,clf))
+        logger.info('Training final Regression for {} with features {}. Classifier:{}'.format(target,features,clf))
         clf.fit(X,Y)
 
         name = 'weights_finalRegressor_{}_{}'.format(self.EBEE,var)
-        print 'Saving final regrssion trained with features {} for {} to {}/{}.pkl'.format(features,'{}_corr_diff_scale'.format(var),weightsDir,name)
+        logger.info('Saving final regrssion trained with features {} for {} to {}/{}.pkl'.format(
+            features,'{}_corr_diff_scale'.format(var),weightsDir,name))
         dic = {'clf': clf, 'X': features, 'Y': '{}_corr_diff_scale'.format(var)}
-        pkl.dump(dic,gzip.open('{}/{}/{}.pkl'.format(self.workDir,weightsDir,name),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
-        
+        pkl.dump(dic,gzip.open('{}/{}.pkl'.format(weightsDir,name),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
+
     def loadFinalRegression(self,var,weightsDir):
         """
-        Method to load a final regressor. 
+        Method to load a final regressor.
         Parameters
         ----------
         var : string
@@ -358,7 +377,7 @@ class quantileRegression_chain(object):
         weightsDir: string
             Directory the regressor is loaded from, relaitve to ``workDir``
         """
-        
+
         self.finalReg = self.load_clf_safe(var,weightsDir,'weights_finalRegressor_{}_{}.pkl'.format(self.EBEE,var),self.kinrho+self.vars,'{}_corr_diff_scale'.format(var))
 
     def loadScaler(self,var,weightsDir):
@@ -371,12 +390,13 @@ class quantileRegression_chain(object):
         weightsDir: string
             Directory the scaler is loaded from, relaitve to ``workDir``
         """
-        
-        self.scaler = pkl.load(gzip.open('{}/{}/scaler_mc_{}_{}_corr_diff.pkl'.format(self.workDir,weightsDir,self.EBEE,var)))
+        weightsDir = weightsDir if weightsDir.startswith('/') else '{}/{}'.format(self.workDir, weightsDir)
+
+        self.scaler = pkl.load(gzip.open('{}/scaler_mc_{}_{}_corr_diff.pkl'.format(weightsDir,self.EBEE,var)))
 
     def applyFinalRegression(self,var,diz=False):
         """
-        Method to apply correction using the final single BDT trained with ``trainFinalRegression``. 
+        Method to apply correction using the final single BDT trained with ``trainFinalRegression``.
         Parameters
         ----------
         var : string
@@ -393,7 +413,7 @@ class quantileRegression_chain(object):
         else:
             X = self.MC.loc[:,features].values
             self.MC['{}_corr_1Reg'.format(var)] = self.MC[var] + self.scaler.inverse_transform(self.finalReg.predict(X).reshape(-1,1)).ravel()
-        
+
     def trainAllMC(self,weightsDir,n_jobs=1):
         """
         Method to train all BDTs for MC. Multiple BDTs per variable are trained and applied, such that the
@@ -405,7 +425,7 @@ class quantileRegression_chain(object):
         n_jobs: int
             Number of jobs used for applying the previously trained BDTs. Uses ipcluster if set up.
         """
-        
+
         for var in self.vars:
             try:
                 self.loadClfs(var,weightsDir)
@@ -414,7 +434,7 @@ class quantileRegression_chain(object):
                 self.loadClfs(var,weightsDir)
 
             self.correctY(var,n_jobs=n_jobs)
-            
+
     def loadClfs(self, var, weightsDir):
         """
         Method to load mulitple BDTs for data and MC simultaneously. See ``load_clf_safe`` for details.
@@ -425,10 +445,10 @@ class quantileRegression_chain(object):
         weightsDir : string
             Directory where weights are stored. Relative to workDir
         """
-        
+
         self.clfs_mc = [self.load_clf_safe(var, weightsDir, 'mc_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
         self.clfs_d = [self.load_clf_safe(var, weightsDir,'data_weights_{}_{}_{}.pkl'.format(self.EBEE,var,str(q).replace('.','p'))) for q in self.quantiles]
-        
+
     def load_clf_safe(self,var,weightsDir,name,X_name=None,Y_name=None):
         """
         General method to load regressor stored in pkl file. The file has to contain a dictionay
@@ -444,13 +464,14 @@ class quantileRegression_chain(object):
         name : string
             Filename of the weight file
         X_name : string, default ``None``
-            List of variables used as inputs for the BDT training. Set automatically 
+            List of variables used as inputs for the BDT training. Set automatically
             if ``None``.
         Y_name : string, default ``None``
             Name of variable the BDT is trained for. Is set to ``var`` if it is ``None``
         """
-        
-        clf = pkl.load(gzip.open('{}/{}/{}'.format(self.workDir,weightsDir,name)))
+        weightsDir = weightsDir if weightsDir.startswith('/') else '{}/{}'.format(self.workDir, weightsDir)
+
+        clf = pkl.load(gzip.open('{}/{}'.format(weightsDir,name)))
 
         if X_name is None:
             if name.startswith('mc'):
@@ -459,18 +480,18 @@ class quantileRegression_chain(object):
                 X_name = self.kinrho +  self.vars[:self.vars.index(var)]
             else:
                 raise NameError('name has to start with data or mc')
-           
+
         if Y_name is None:
             Y_name=var
-            
+
         if clf['X'] != X_name or clf['Y'] != Y_name:
-            raise ValueError('{}/{}/{} was not trained with the right order of Variables! Got {}, stored in file {}'.format(self.workDir,weightsDir,name,X_name,clf['X']))
+            raise ValueError('{}/{} was not trained with the right order of Variables! Got {}, stored in file {}'.format(weightsDir,name,X_name,clf['X']))
         else:
             return clf['clf']
-        
+
     def _getCondCDF(self,df,clfs,features,var):
         """
-        Method to get the value of the conditional CDF of one variable for one event. 
+        Method to get the value of the conditional CDF of one variable for one event.
         Needed for ``quantileRegression_chain_disc``
         Arguments
         ---------
@@ -486,16 +507,16 @@ class quantileRegression_chain(object):
         -------
         numpy array : With cdf values for each event. Shape : ``[n_evts,1]``
         """
-        
+
         qtls_names = ['q{}_{}'.format(str(self.quantiles[i]).replace('0.','p'),var) for i in range(len(self.quantiles))]
         X = df.loc[:,features]
         if not all(qtls_names) in df.columns:
             mcqtls = [clf.predict(X) for clf in clfs]
             for i in range(len(self.quantiles)):
                 df[qtls_names[i]] = mcqtls[i]
-                
+
         return df.loc[:,[var] + qtls_names].apply(self._getCDFval,1,raw=True)
-        
+
     def _getCDFval(self,row):
         """
         Helper method to get cdf value through linear interpolation
@@ -506,7 +527,7 @@ class quantileRegression_chain(object):
             Array with value of variable and predicted quantile values
         Returns
         -------
-        double : 
+        double :
         """
         Y = row[0]
         qtls = np.array(row[1:].values,dtype=float)
@@ -520,7 +541,7 @@ class quantileRegression_chain(object):
             return np.random.uniform(0.99,1)
 
         return np.interp(Y,qtls[ind-1:ind+1],bins[ind-1:ind+1])
-        
+
     def computeIdMvas(self,mvas,weights,key,n_jobs=1,leg2016=False):
         """
         Method to evaluate several versions of the photon IdMVA. Calls ``computeIdMva``
@@ -531,10 +552,10 @@ class quantileRegression_chain(object):
             the third entry is a list of corrected variables to be used for the calculation of this
             version of the IdMVA
         weights : 2-tuple, strings
-            The first entry of the tuple is the path to the photon IDMVA weight file for EB, 
+            The first entry of the tuple is the path to the photon IDMVA weight file for EB,
             the second entry is the path to the photon IdMVA weight file for EE
         """
-        
+
         weightsEB,weightsEE = weights
         for name,tpC,correctedVariables in mvas:
             self.computeIdMva(name,weightsEB,weightsEE,key,correctedVariables,tpC,leg2016,n_jobs)
@@ -562,27 +583,27 @@ class quantileRegression_chain(object):
         n_jobs : int, default 1
             Number of parallel jobs to be used for the computation of the photon IdMVA
         """
-        
+
         if key=='mc':
             stride = self.MC.index.size / n_jobs
         elif key=='data':
             stride = self.data.index.size / n_jobs
-        print("Computing %s, correcting %s, stride %s" % (name,correctedVariables,stride) )
+        logger.info("Computing %s, correcting %s, stride %s" % (name,correctedVariables,stride) )
         if key == 'mc':
             with parallel_backend(self.backend):
-                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeIdMva)(weightsEB,weightsEE,correctedVariables,self.MC[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.MC.index.size,stride)))
+                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeIdMva)(weightsEB,weightsEE,correctedVariables,self.MC[ch:ch+stride],tpC, leg2016) for ch in range(0,self.MC.index.size,stride)))
             self.MC[name] = Y
         elif key == 'data':
             with parallel_backend(self.backend):
-                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeIdMva)(weightsEB,weightsEE,correctedVariables,self.data[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.data.index.size,stride)))
+                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeIdMva)(weightsEB,weightsEE,correctedVariables,self.data[ch:ch+stride],tpC, leg2016) for ch in range(0,self.data.index.size,stride)))
             self.data[name] = Y
 
     def computeEleIdMvas(self,mvas,weights,key,n_jobs=1,leg2016=False):
         """
-        Method to evaluate several version of the electron IdMVA. Calls ``computeEleIdMva``. 
+        Method to evaluate several version of the electron IdMVA. Calls ``computeEleIdMva``.
         For Arguments see ``computeIdMvas``
         """
-        
+
         weightsEB1,weightsEB2,weightsEE = weights
         for name,tpC,correctedVariables in mvas:
             self.computeEleIdMva(name,weightsEB1,weightsEB2,weightsEE,key,correctedVariables,tpC,leg2016,n_jobs)
@@ -592,19 +613,19 @@ class quantileRegression_chain(object):
         Method to compute the electron IdMVA. Uses ``helpComputeEleIdMva`` from ``..tmva.eleIdMVAComputer``.
         For Arguments see ``computeIdMva``
         """
-        
+
         if key=='mc':
             stride = self.MC.index.size / n_jobs
         elif key=='data':
             stride = self.data.index.size / n_jobs
-        print("Computing %s, correcting %s, stride %s" % (name,correctedVariables,stride) )
+        logger.info("Computing %s, correcting %s, stride %s" % (name,correctedVariables,stride))
         if key == 'mc':
             with parallel_backend(self.backend):
-                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeEleIdMva)(weightsEB1,weightsEB2,weightsEE,correctedVariables,self.MC[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.MC.index.size,stride)))
+                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeEleIdMva)(weightsEB1,weightsEB2,weightsEE,correctedVariables,self.MC[ch:ch+stride],tpC, leg2016) for ch in range(0,self.MC.index.size,stride)))
             self.MC[name] = Y
         elif key == 'data':
             with parallel_backend(self.backend):
-                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeEleIdMva)(weightsEB1,weightsEB2,weightsEE,correctedVariables,self.data[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.data.index.size,stride)))
+                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeEleIdMva)(weightsEB1,weightsEB2,weightsEE,correctedVariables,self.data[ch:ch+stride],tpC, leg2016) for ch in range(0,self.data.index.size,stride)))
             self.data[name] = Y
 
 
@@ -616,7 +637,7 @@ class quantileRegression_chain(object):
         ipp_profile : string
             Name of ipcluster profile for the started ipcluster that will be set up
         """
-        
+
         import ipyparallel as ipp
         from ipyparallel.joblib import IPythonParallelBackend
         global joblib_rc,joblib_view,joblib_be
@@ -648,24 +669,24 @@ def trainClf(alpha,maxDepth,minLeaf,X,Y,save=False,outDir=None,name=None,X_names
     outDir : string
         path to the directory where trained classifier is stored. Only used if ``save`` is ``True``
     X_names : list
-        List of variable names of the input variables, to be written in the stored file. 
+        List of variable names of the input variables, to be written in the stored file.
         Only used if ``save`` is ``True``
     Y_name : string
         Name of the target variable, to be written in the stored file. Only used if ``save`` is ``True``
     """
-    
+
     clf = GradientBoostingRegressor(loss='quantile', alpha=alpha,
                                     n_estimators=500, max_depth=maxDepth,
                                     learning_rate=.1, min_samples_leaf=minLeaf,
                                     min_samples_split=minLeaf)
-        
+
     clf.fit(X,Y)
 
     if save and (outDir is None or name is None or X_names is None or Y_name is None):
         raise TypeError('outDir, name, X_names and Y_name must not be NoneType if save=True')
     if save:
-        print 'Saving clf trained with features {} for {} to {}/{}.pkl'.format(X_names,Y_name,outDir,name)
+        logger.info('Saving clf trained with features {} for {} to {}/{}.pkl'.format(X_names,Y_name,outDir,name))
         dic = {'clf': clf, 'X': X_names, 'Y': Y_name}
         pkl.dump(dic,gzip.open('{}/{}.pkl'.format(outDir,name),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
-    
+
     return clf
