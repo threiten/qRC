@@ -7,7 +7,7 @@ import xgboost as xgb
 import gzip
 import yaml
 import os
-from root_pandas import read_root
+import uproot
 
 from joblib import delayed, Parallel, parallel_backend, register_parallel_backend
 
@@ -84,10 +84,13 @@ class quantileRegression_chain(object):
             Dataframe from read *.root file
         """
 
+        root_file = uproot4.open(path)
+        up_tree = root_file[tree]
+
         if self.year == '2016' and 'Data' not in tree:
-            df = read_root(path,tree,columns=self.branches+['probePhoIso_corr'])
+            df = up_tree.arrays(self.branches + ['probePhoIso_corr'], library = 'pd')
         else:
-            df = read_root(path,tree,columns=self.branches)
+            df = up_tree.arrays(self.branches, library = 'pd')
 
         logger.info('Dataframe with columns {}'.format(df.columns))
         index = np.array(df.index)
