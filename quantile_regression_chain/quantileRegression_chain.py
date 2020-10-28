@@ -98,7 +98,7 @@ class quantileRegression_chain(object):
         logger.info('Reshuffling events')
         np.random.seed(rndm)
         np.random.shuffle(index)
-        df = df.ix[index]
+        df = df.iloc[index]
 
         df.query('probePt>@self.ptmin and probePt<@self.ptmax and probeScEta>@self.etamin and probeScEta<@self.etamax and probePhi>@self.phimin and probePhi<@self.phimax',inplace=True)
 
