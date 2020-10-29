@@ -35,7 +35,7 @@ class quantileRegression_chain(object):
     def __init__(self,year,EBEE,workDir,varrs):
 
         self.year = year
-        self.workDir = workDir
+        self.workDir = os.path.abspath(workDir)
         self.kinrho = ['probePt','probeScEta','probePhi','rho']
         if not type(varrs) is list:
             varrs=list((varrs,))
@@ -263,7 +263,17 @@ class quantileRegression_chain(object):
         logger.info('Training quantile regression on {} for {} with features {}'.format(key,var,features))
 
         with parallel_backend(self.backend):
-            Parallel(n_jobs=len(self.quantiles),verbose=20)(delayed(trainClf)(q,maxDepth,minLeaf,X,Y,save=True,outDir='{}/{}'.format(self.workDir,weightsDir),name='{}_weights_{}_{}_{}'.format(name_key,self.EBEE,var,str(q).replace('.','p')),X_names=features,Y_name=var) for q in self.quantiles)
+            Parallel(n_jobs=len(self.quantiles),verbose=20)(
+                    delayed(trainClf)(
+                        q,
+                        maxDepth,
+                        minLeaf,
+                        X,
+                        Y,
+                        save = True,
+                        outDir = weightsDir if weightsDir.startswith('/') else '{}/{}'.format(self.workDir,weightsDir),
+                        name ='{}_weights_{}_{}_{}'.format(name_key,self.EBEE,var,str(q).replace('.','p')),
+                        X_names = features,Y_name=var) for q in self.quantiles)
 
 
     def correctY(self, var, n_jobs=1, diz=False):
@@ -323,6 +333,7 @@ class quantileRegression_chain(object):
         robSca = RobustScaler()
         features = self.kinrho + self.vars
         target = '{}_corr_diff_scale'.format(var)
+        weightsDir = weightsDir if weightsDir.startswith('/') else '{}/{}'.format(self.workDir, weightsDir)
 
         if diz:
             querystr = '{0}!=0 and {0}_corr!=0'.format(var)
@@ -332,13 +343,13 @@ class quantileRegression_chain(object):
         df = self.MC.query(querystr)
 
         df['{}_corr_diff_scale'.format(var)] = robSca.fit_transform(np.array(df['{}_corr'.format(var)] - df[var]).reshape(-1,1))
-        pkl.dump(robSca,gzip.open('{}/{}/scaler_mc_{}_{}_corr_diff.pkl'.format(self.workDir,weightsDir,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
+        pkl.dump(robSca,gzip.open('{}/scaler_mc_{}_{}_corr_diff.pkl'.format(weightsDir,self.EBEE,var),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
 
         X = df.loc[:,features].values
         Y = df[target].values
 
         try:
-            settings = yaml.load(open('{}/{}/finalRegression_settings.yaml'.format(self.workDir,weightsDir)))
+            settings = yaml.load(open('{}/finalRegression_settings.yaml'.format(weightsDir)))
             clf = xgb.XGBRegressor(base_score=0.,n_jobs=n_jobs,**settings[var])
             logger.info('Custom settings loaded')
         except (IOError,KeyError):
@@ -352,7 +363,7 @@ class quantileRegression_chain(object):
         logger.info('Saving final regrssion trained with features {} for {} to {}/{}.pkl'.format(
             features,'{}_corr_diff_scale'.format(var),weightsDir,name))
         dic = {'clf': clf, 'X': features, 'Y': '{}_corr_diff_scale'.format(var)}
-        pkl.dump(dic,gzip.open('{}/{}/{}.pkl'.format(self.workDir,weightsDir,name),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
+        pkl.dump(dic,gzip.open('{}/{}.pkl'.format(weightsDir,name),'wb'),protocol=pkl.HIGHEST_PROTOCOL)
 
     def loadFinalRegression(self,var,weightsDir):
         """
@@ -377,8 +388,9 @@ class quantileRegression_chain(object):
         weightsDir: string
             Directory the scaler is loaded from, relaitve to ``workDir``
         """
+        weightsDir = weightsDir if weightsDir.startswith('/') else '{}/{}'.format(self.workDir, weightsDir)
 
-        self.scaler = pkl.load(gzip.open('{}/{}/scaler_mc_{}_{}_corr_diff.pkl'.format(self.workDir,weightsDir,self.EBEE,var)))
+        self.scaler = pkl.load(gzip.open('{}/scaler_mc_{}_{}_corr_diff.pkl'.format(weightsDir,self.EBEE,var)))
 
     def applyFinalRegression(self,var,diz=False):
         """
@@ -455,8 +467,9 @@ class quantileRegression_chain(object):
         Y_name : string, default ``None``
             Name of variable the BDT is trained for. Is set to ``var`` if it is ``None``
         """
+        weightsDir = weightsDir if weightsDir.startswith('/') else '{}/{}'.format(self.workDir, weightsDir)
 
-        clf = pkl.load(gzip.open('{}/{}/{}'.format(self.workDir,weightsDir,name)))
+        clf = pkl.load(gzip.open('{}/{}'.format(weightsDir,name)))
 
         if X_name is None:
             if name.startswith('mc'):
@@ -470,7 +483,7 @@ class quantileRegression_chain(object):
             Y_name=var
 
         if clf['X'] != X_name or clf['Y'] != Y_name:
-            raise ValueError('{}/{}/{} was not trained with the right order of Variables! Got {}, stored in file {}'.format(self.workDir,weightsDir,name,X_name,clf['X']))
+            raise ValueError('{}/{} was not trained with the right order of Variables! Got {}, stored in file {}'.format(weightsDir,name,X_name,clf['X']))
         else:
             return clf['clf']
 
