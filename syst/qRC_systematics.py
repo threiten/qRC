@@ -154,11 +154,12 @@ class systShift(object):
 
 class systematics(object):
 
-    def __init__(self, df, shifts, shiftFctn):
+    def __init__(self, df, shifts, shiftFctn, nomVar='probePhoIdMVAtr'):
         
         self.df = df
         self.shifts = np.array(shifts)
         self.shiftFctn = shiftFctn
+        self.nomVar = nomVar
 
     def multiShift(self, val, stat_corr):
 

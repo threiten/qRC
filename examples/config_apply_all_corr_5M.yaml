@@ -1,0 +1,43 @@
+dataframes:
+ data:
+  EB:
+   input: df_data_EB_test.h5
+   output: df_data_EB_test_IdMVA_5M.h5
+  EE:
+   input: df_data_EE_test.h5
+   output: df_data_EE_test_IdMVA_5M.h5
+ mc:
+  EB:
+   input: df_mc_EB_test_clf.h5
+   output: df_mc_EB_test_corr_clf_5M.h5
+  EE:
+   input: df_mc_EE_test_clf.h5
+   output: df_mc_EE_test_corr_clf_5M.h5
+
+showerShapes:
+ ['probeCovarianceIeIp','probeS4','probeR9','probePhiWidth','probeSigmaIeIe','probeEtaWidth']
+
+chIsos:
+ ['probeChIso03','probeChIso03worst']
+
+year:
+ 2017
+
+workDir:
+ /mnt/t3nfs01/data01/shome/threiten/QReg/ReReco17_data/camp_3_1_0/probePS/fullSample
+
+weightsDirs:
+ showerShapes:
+  weights_qRC_5M
+ phoIso:
+  weights_qRC_5M
+ chIsos:
+  weights_qRC_5M
+
+finalWeightsDirs:
+ showerShapes:
+  weights_qRC_5M/final
+ phoIso:
+  weights_qRC_5M/final
+ chIsos:
+  weights_qRC_5M/final
