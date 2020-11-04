@@ -118,7 +118,7 @@ class systShift(object):
             self.const = False
             self.shiftFctn = shiftFctn
 
-    def getShiftPars(self):
+    def getShiftPars(self, correctEdges=False):
 
         bins = np.linspace(0,1,101)
         self.df['newPhoIDtrcorrAll_bin'] = pd.cut(self.df['newPhoIDtrcorrAll1'],bins=bins,labels=np.arange(bins.shape[0]-1))
@@ -126,6 +126,9 @@ class systShift(object):
         self.xc = 0.5*(bins[1:] + bins[:-1])
         cutoff = self.df['diffTrainings_transformed'].quantile(q=0.95)
         self.stand = np.array([groupby.get_group(i).loc[abs(groupby.get_group(i)['diffTrainings_transformed'])<cutoff,'diffTrainings_transformed'].std() for i in range(100)])
+        if correctEdges:
+            self.stand[(self.xc-self.stand)<0.] = 2*self.stand[(self.xc-self.stand)<0.]
+            self.stand[(self.xc+self.stand)>1.] = 2*self.stand[(self.xc+self.stand)>1.]
         if self.const:
             self.shift_pars = [self.df['diffTrainings_transformed'].quantile(q=0.84)]
         else:
