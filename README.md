@@ -1,77 +1,146 @@
-# Chained quantile regression
-This repo contains the code to do data/MC correction using chained quantile regression and stochastic matching. 
-The class `quantileRegression_chain` can be used to correct a set of continious variables differentially and 
-while keeping their correlations. The class `quantileRegression_chain_disc` can be used to correct discontinious variables.
-## Training BDTs for quantiles
-To train the BDTs that will be used to extract the conditional pdf the functions `trainOnData` for data and `trainOnMC` 
-for MC have to be used. For example:
-```python
-import quantileRegression_chain as qRegC
-qRC = qRegC.quantileRegression_chain(year,EBEE,workDir,variables)
-qRC.loadDataDF(df_name,0,stop,rsh,columns)
-qRC.trainOnData(variable,weightsDir)
+## Motivation
+TODO
+
+## Installation
+The suggested way to run this software is in a conda environment with the necessary prerequisites (```environment.yaml``` to set up a conda environment will be provided).
+At this stage, the workflow consists simply in cloning the repository and running 
+```bash
+python setup.py install
 ```
-# Scripts for training
-The strategy to train on a large dataset is the following
-1. Train on data
+to install in the default directories, allowing to import the package from everywhere.
 
-	To train on data use `scripts/run_qRC_training.sh`
-	```bash
-	./run_qRC_training.sh <config_file_ShowerShapes>.yaml <config_file_PhotonIso>.yaml <config_file_ChargedIsos>.yaml <n_evts> <EB/EE>
-	```
-	This will submit one job per quantile per variable to the SGE queue via qub. BEWARE: There is a hard coded path in this script. Change it accordingly
-	
-2. Train Shower Shapes on MC
-   
-   To train the shower shape correction for MC use `training/train_qRC_MC.py`. Before starting the training on MC, the training on Data needs to be finished completely
-   ```bash
-   python train_qRC_MC.py  -c <config_file_ShowerShapes>.yaml -N <n_evts> -E <EB/EE> -B <cluster_profile> -i <cluster_id>
-   ```
-   
-3. Train Isolations on MC
+## Workflow
 
-	To train the shower shape correction for MC use `training/train_qRC_MC.py`
-   ```bash
-   python train_qRC_I_MC.py  -c <config_file_(PhotonIso/ChargedIsos)>.yaml -N <n_evts> -E <EB/EE> -B <cluster_profile> -i <cluster_id>
-   ```
+### Create dataframes
+(did not change)
 
-## Final corrections training
-
-After validating the initial training, one can train the final single regressors that can be used to apply the corrections to the simulation in production. To do so, follow these steps:
-
-1. Train the final shower shape corrections
-
-	To train the final shower shape correction use `training/train_final_Reg_SS.py`
-	```bash
-	python train_final_Reg_SS.py  -c <config_file_ShowerShapes>.yaml -N <n_evts> -E <EB/EE> -B <ipython_cluster_profile> -i <cluster_id> -n 21
-	```
-2. Train final charged Iso corrections
-
-	To train the final correction for the charged isolations use `training/train_final_Reg_Iso.py`
-	```bash
-	python train_final_Reg_Iso.py  -c <config_file_(ChargedIsos)>.yaml -N <n_evts> -E <EB/EE> -B <ipython_cluster_profile> -i <cluster_id> -n 21
-	```
-	
-3. Train final photon Iso corrections
-
-	To train the final correction for the photon isolation use `training/train_final_Reg_Iso.py`
-	```bash
-	python train_final_Reg_Iso.py  -c <config_file_(PhotonIso)>.yaml -N <n_evts> -E <EB/EE> -B <ipython_cluster_profile> -i <cluster_id> -n 21
-	```
-	
-	The only difference between the command for charged and photon Iso are the config files
-	
-### Note on config files
-
-In general the config files for the training for data and simulation for the initial and final training have the same format. Examples can be found in `examples`. The following keywords should be used
-
-| Keyword    | Used for                                                                   |
-|------------|----------------------------------------------------------------------------|
-| Dataframes | `(data/mc)_(EB/EE)` for the dataframe for data/MC in EB/EE                 |
-| variables  | The list of variables to be corrected. The order here is important         |
-| year       | The year of data-taking the relevant datasets are from                     |
-| workDir    | the path to the working dir, dataframes and weightsDir need to be in there |
-| weightsDir | directory to store the weights. Create before training                     |
-| outDir     | directory to store the final weight. Create before training                |
-
-
+### Train regressors
+Given a simple script ```train_regressors.py``` like the following:
+```python
+import argparse
+from dask.distributed import Client, LocalCluster, progress, wait, get_client  
+  
+from quantile_regression_chain import QRCScheduler  
+  
+import logging  
+logger = logging.getLogger("")  
+  
+def parse_arguments():  
+    parser = argparse.ArgumentParser(  
+        description = 'Variables related to local user paths')  
+  
+    parser.add_argument(  
+        "-c",  
+        "--config_file",  
+        required=True,  
+        type=str,  
+        help="Path to YAML config file")  
+  
+    parser.add_argument(  
+        "-sc",  
+        "--slurm_config",  
+        type=str,  
+        help="Path to YAML config file with information to setup a SLURM cluster")  
+  
+    return parser.parse_args()  
+  
+def setup_logging(output_file, level=logging.DEBUG):  
+    logger.setLevel(level)  
+    formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")  
+  
+    handler = logging.StreamHandler()  
+    handler.setFormatter(formatter)  
+    logger.addHandler(handler)  
+  
+    file_handler = logging.FileHandler(output_file, "w")  
+    file_handler.setFormatter(formatter)  
+    logger.addHandler(file_handler)  
+  
+def main(args):  
+    # Parse cmd line arguments  
+    config_file = args.config_file  
+    slurm_config = args.slurm_config
+  
+    qrc_scheduler = QRCScheduler(config_file)  
+  
+    if slurm_config:  
+        qrc_scheduler.setup_slurm_cluster(slurm_config)  
+  
+    qrc_scheduler.load_dataframes()  
+  
+    qrc_scheduler.train_regressors()  
+  
+if __name__ == "__main__":  
+    args = parse_arguments()  
+    setup_logging('train_all_with_scheduler.log', logging.INFO)    
+    main(args)
+```
+the regressors for all the variables from UL2017 can be trained by running:
+```bash
+python train_regressors.py --config_file config.yaml
+```
+where ```config.yaml``` looks like this:
+```python
+dataframes:
+  data:  
+    EB:  
+      SS:  
+        df_data_EB_train.h5  
+      iso:  
+        df_data_EB_Iso_train.h5  
+    EE:  
+      SS:  
+        df_data_EE_train.h5  
+      iso:  
+        df_data_EE_Iso_train.h5  
+  mc:  
+    EB:  
+      SS:  
+        df_mc_EB_train.h5  
+      iso:  
+        df_mc_EB_Iso_train.h5  
+    EE:  
+      SS:  
+        df_mc_EE_train.h5  
+      iso:  
+        df_mc_EE_Iso_train.h5  
+  
+year:  
+  2017  
+  
+datasets:  
+  ['data', 'mc']  
+  
+detectors:  
+  ['EB', 'EE']  
+  
+variables:  
+  SS:  
+    ['probeCovarianceIeIp', 'probeS4', 'probeR9', 'probePhiWidth', 'probeSigmaIeIe', 'probeEtaWidth']  
+  iso:  
+  ch:  
+    ['probeChIso03', 'probeChIso03worst']  
+  ph:  
+    ['probePhoIso']  
+  
+quantiles:  
+  [0.01,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99]
+  
+work_dir:  
+  /path/to/dataframes  
+  
+weights_dir:  
+  /path/to/weights_dir
+```
+It is also possible to run on a SLURM cluster with the following command
+```bash
+python train_all.py --config_file config.yaml --slurm_config slurm_config.yaml
+```
+where ```slurm_config.yaml``` is a file that looks like this
+```python
+jobqueue:  
+  slurm:  
+    cores: 1  
+    memory: 10GB  
+    jobs: 4
+```
