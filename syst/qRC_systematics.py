@@ -127,10 +127,9 @@ class systShift(object):
         cutoff = self.df['diffTrainings_transformed'].quantile(q=0.95)
         self.stand = np.array([groupby.get_group(i).loc[abs(groupby.get_group(i)['diffTrainings_transformed'])<cutoff,'diffTrainings_transformed'].std() for i in range(100)])
         if correctEdges:
-            ranBZero = (self.xc-np.ones_like(self.stand)*self.stand.max())<0.
-            self.stand[ranBZero] = (1. + np.ones_like(self.stand[ranBZero]) * self.stand.max() - self.stand[ranBZero]) * self.stand[ranBZero]
-            ranAOne = (self.xc+np.ones_like(self.stand)*self.stand.max())>1.
-            self.stand[ranAOne] = (1. + np.ones_like(self.stand[ranAOne]) * self.stand.max() - self.stand[ranAOne]) *  self.stand[ranAOne]
+            indMax = self.stand == self.stand.max()
+            diffMax = np.abs(self.xc - self.xc[indMax] * np.ones_like(self.xc)))
+            self.stand = (1. - diffMax) * self.stand + diffMax * self.stand.max() * np.ones_like(self.stand)
         if self.const:
             self.shift_pars = [self.df['diffTrainings_transformed'].quantile(q=0.84)]
         else:
