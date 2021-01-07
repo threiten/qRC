@@ -355,7 +355,7 @@ class quantileRegression_chain(object):
             settings = yaml.load(open('{}/finalRegression_settings.yaml'.format(weightsDir)))
             clf = xgb.XGBRegressor(base_score=0.,n_jobs=n_jobs,**settings[var])
             logger.info('Custom settings loaded')
-        except (IOError,KeyError):
+        except (FileNotFoundError,KeyError):
             logger.info('No custom settings found, training with standard settings')
             clf = xgb.XGBRegressor(n_estimators=1000, max_depth=10, gamma=0, base_score=0.,n_jobs=n_jobs)
 
@@ -430,7 +430,7 @@ class quantileRegression_chain(object):
         for var in self.vars:
             try:
                 self.loadClfs(var,weightsDir)
-            except IOError:
+            except FileNotFoundError:
                 self.trainOnMC(var,weightsDir=weightsDir)
                 self.loadClfs(var,weightsDir)
 
