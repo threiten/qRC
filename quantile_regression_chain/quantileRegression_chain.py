@@ -531,7 +531,7 @@ class quantileRegression_chain(object):
         double :
         """
         Y = row[0]
-        qtls = np.array(row[1:].values,dtype=float)
+        qtls = np.array(row[1:],dtype=float)
         bins = self.quantiles
 
         ind = np.searchsorted(qtls,Y)
@@ -586,9 +586,9 @@ class quantileRegression_chain(object):
         """
 
         if key=='mc':
-            stride = self.MC.index.size / n_jobs
+            stride = int(self.MC.index.size / n_jobs)
         elif key=='data':
-            stride = self.data.index.size / n_jobs
+            stride = int(self.data.index.size / n_jobs)
         logger.info("Computing %s, correcting %s, stride %s" % (name,correctedVariables,stride) )
         if key == 'mc':
             with parallel_backend(self.backend):
