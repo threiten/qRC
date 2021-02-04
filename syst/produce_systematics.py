@@ -109,7 +109,7 @@ def main(options):
         label += '_zoom'
         
     shift = syst.systShift(df1, df2, shiftFctn)
-    shift.getShiftPars()
+    shift.getShiftPars(correctEdges=options.correctEdges)
     if options.plotDir is not None:
         shift.plotFit(options.plotDir, label=label.replace(' ','_'))
     
@@ -145,5 +145,6 @@ if __name__ == "__main__":
     optionalArgs.add_argument('-F', '--shiftF', action='store', type=str)
     optionalArgs.add_argument('-r', '--forceReweight', action='store_true', default=False)
     optionalArgs.add_argument('-z', '--zoom', action='store_true', default=False)
+    optionalArgs.add_argument('-E', '--correctEdges', action='store_true', default=False)
     options = parser.parse_args()
     main(options)
