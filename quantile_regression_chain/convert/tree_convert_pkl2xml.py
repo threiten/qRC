@@ -5,14 +5,14 @@ from sklearn.tree import _tree
 
 class Tree:
     """Represents a node in a decision tree, identified by a unique integer id
-    
+
     Attributes:
         children (list of int): The id-s of the children associated with this node
         depth (int): The depth of this node in the tree
         id (int): The unique id of this node
         parent (id): The id of the parent node
         payload (tuple): Describes what this node does,
-            i.e. is it a non-terminal node (cut) or a terminal (leaf) 
+            i.e. is it a non-terminal node (cut) or a terminal (leaf)
     """
     def __init__(self, id, children, parent, depth, payload):
         self.id = id
@@ -32,27 +32,27 @@ class Tree:
 
     def print_out(self, node_dict):
         """Recursively prints a node and its children, given a dictionary with all the available nodes
-        
+
         Args:
             node_dict (dict id->node): All the available nodes
-        
+
         Returns:
             nothing
         """
-        print (self.depth + 1) * "-" + str(self)
+        print((self.depth + 1) * "-" + str(self))
         for ch in self.children:
             node_dict[ch].print_out(node_dict)
 
     def to_tmva(self, nodetree, scale):
         """Writes out a TMVA-compatible XML string for a given node in the decision tree
-        
+
         Args:
             nodetree (dict int->Tree): The dictionary of the full tree
             scale (float): A scaling coefficient for the TMVA leaves (TMVA = sklearn * scale)
-        
+
         Returns:
             string: XML with the node
-        
+
         """
 
         kind = "c"
@@ -62,7 +62,7 @@ class Tree:
                 kind = "l"
             elif idx == 1:
                 kind = "r"
-        
+
         #handle leaf (terminal) node
         if len(self.children) == 0:
 
@@ -92,14 +92,14 @@ class Tree:
 
 def sklearn_to_nodetree(cls, nodetree, sklearn_tree, node_id=0, parent_id=-1, depth=-1):
     """Recursively converts a sklearn GradientBoosting{Classifier,Regressor} to a generic representation
-    
+
     Args:
         nodetree (dict id->Node): The output dictionary with the nodes
         sklearn_tree (DecisionTreeRegressor): The input decision tree
         node_id (int): the id of the root node
         parent_id (int): the id of the parent node
         depth (int): The current depth
-    
+
     Returns:
         dict int->Tree: The output node tree
     """
@@ -114,7 +114,7 @@ def sklearn_to_nodetree(cls, nodetree, sklearn_tree, node_id=0, parent_id=-1, de
             ("val", sklearn_tree.value[node_id][0,0]/cls.n_estimators)
         )
         nodetree[node_id] = n
-        if nodetree.has_key(parent_id):
+        if parent_id in nodetree:
             nodetree[parent_id].children += [node_id]
     #this is not a leaf node
     else:
@@ -126,7 +126,7 @@ def sklearn_to_nodetree(cls, nodetree, sklearn_tree, node_id=0, parent_id=-1, de
             ("cut", sklearn_tree.feature[node_id], sklearn_tree.threshold[node_id])
         )
         nodetree[node_id] = n
-        if nodetree.has_key(parent_id):
+        if parent_id in nodetree:
             nodetree[parent_id].children += [node_id]
 
     left_child = sklearn_tree.children_left[node_id]
@@ -140,10 +140,10 @@ def sklearn_to_nodetree(cls, nodetree, sklearn_tree, node_id=0, parent_id=-1, de
 
 def xgbtree_to_nodetree(tree):
     """Converts an xgboost tree dump to an internal Tree representation
-    
+
     Args:
         tree (string): The model dump from xgboost using model.booster().get_dump()[ntree]
-    
+
     Returns:
         dict int->Tree: The tree structure
     """
@@ -196,7 +196,7 @@ def xgbtree_to_nodetree(tree):
             nodes[node_index] = Tree(node_index, [], my_parent, node_depth, ("val", val))
 
         #insert node into final node dict
-        if nodes.has_key(my_parent):
+        if my_parent in nodes:
             nodes[my_parent].children += [node_index]
 
         prev_depth = node_depth
@@ -269,7 +269,7 @@ class BDT(object):
             num_targets = 0
             target_string = ""
 
-          
+
         outfile = open(outfile_name, "w")
         outfile.write(
         """
@@ -318,7 +318,7 @@ class BDT(object):
                 "nvars": len(self.feature_names),
                 "varstring": varstring,
                 "learnrate": self.learning_rate,
-                
+
                 "nclasses": num_classes,
                 "class_string": class_string,
 
@@ -382,7 +382,7 @@ class BDT(object):
 
 class BDTxgboost(BDT):
     def __init__(self, model, feature_names, target_names):
-        
+
         self.model = model
         kind = None
         if model.objective.startswith("binary:logistic"):
@@ -391,22 +391,22 @@ class BDTxgboost(BDT):
             kind = "multiclass"
         else:
             kind = "regression"
-        print model.objective, kind
-        print model
+        print(model.objective, kind)
+        print(model)
 
         trees = []
 
         treeindex=0
-        
-        
+
+
 #        do this to check attributes
 #        from pprint import pprint
 #        pprint(vars(model))
 
-#        for tree_dump in model.booster().get_dump(): #in some versions it doesn't work 
-        for i in range(3): 
-             print model._Booster.get_dump()[i]
-        for tree_dump in model._Booster.get_dump(): 
+#        for tree_dump in model.booster().get_dump(): #in some versions it doesn't work
+        for i in range(3):
+             print(model._Booster.get_dump()[i])
+        for tree_dump in model._Booster.get_dump():
             treeindex+=1
           #  if kind == "multiclass":
           #      if not treeindex % self.model.n_classes_ == 0: continue #if you train 1500 trees on 3 classes you have 4500 trees in the model, in the order  (class_0,tree_0), (class_1_tree_0), we get here only the trees for signal (which is last class)
@@ -418,17 +418,17 @@ class BDTxgboost(BDT):
 
     def eval(self, features):
         proba = self.model.predict_proba(features)[:,self.model.n_classes_-1] #this is needed for multiclass
-        print "eval (before transformation) = ", proba
+        print("eval (before transformation) = ", proba)
 
         #invert sigmoid
         proba = -np.log(1.0/proba - 1.0)
 
         #apply TMVA transformation
         proba = 2.0 / (1.0 + np.exp(-2.0*proba)) - 1
-        print "eval (After transformation) = ", proba
+        print("eval (After transformation) = ", proba)
 
         x = 1/(1+np.sqrt((1-proba)/(1+proba)))
-        print "eval (After inverse transformation) = ",         
+        print("eval (After inverse transformation) = ")
 
         vals = np.array(features)
         vals.reshape(1,len(features))
@@ -439,7 +439,7 @@ class BDTxgboost(BDT):
 class BDTsklearn(BDT):
 
     def __init__(self, model, feature_names, target_names):
-        
+
         self.model = model
 
         kind = None
@@ -465,15 +465,15 @@ class BDTsklearn(BDT):
 
     def eval(self, vals):
         """A TMVA-compatible evaluation function for a scikit-learn classifier
-        
+
         Args:
             vals (numpy array): An array (n_samples, n_features) of the input variables
-        
+
         Returns:
             numpy array: (n_samples, n_classes) array of the output
         """
-        
-        #need to scale the same way as done in TMVA    
+
+        #need to scale the same way as done in TMVA
         scale = 1.0 / self.model.n_estimators
 
         if isinstance(self.model, GradientBoostingClassifier):
@@ -492,7 +492,7 @@ class BDTsklearn(BDT):
                         if i != j:
                             norm[:, i] += np.exp(ret[:, j] - ret[:, i])
 
-                ret = 1.0 / (1.0 + norm)        
+                ret = 1.0 / (1.0 + norm)
                 return ret
             #binary classification
             elif self.model.n_classes_ == 2:
@@ -512,13 +512,13 @@ class BDTsklearn(BDT):
 
 def tree_to_tmva(outfile, nodetree, current_node, scale):
     """Recursively writes out a decision tree as an XML
-    
+
     Args:
         outfile (TYPE): Output file, must be writeable
         nodetree (TYPE): The dictionary with the nodes
         current_node (int): current node ID
         scale (float): The scale factor for each leaf
-    
+
     Returns:
         nothing
     """

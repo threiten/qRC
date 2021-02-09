@@ -18,7 +18,8 @@ setup(
     name = "quantile_regression_chain",
     author = "Thomas Reitenspiess",
     packages = ['quantile_regression_chain', 'quantile_regression_chain.tmva',
-                'quantile_regression_chain.plotting', 'quantile_regression_chain.syst'],
+                'quantile_regression_chain.plotting', 'quantile_regression_chain.syst',
+                'quantile_regression_chain.convert'],
     install_requires = [
         'numpy',
         'sklearn',
