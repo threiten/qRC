@@ -8,8 +8,8 @@ import pickle as pkl
 from joblib import delayed, Parallel, parallel_backend, register_parallel_backend
 
 from sklearn.ensemble import GradientBoostingRegressor
-from ..tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
-from ..tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
+from .tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
+from .tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
 from .Corrector import Corrector, applyCorrection
 from .quantile_regression_chain import quantileRegression_chain, trainClf
 from .Shifter import Shifter, applyShift

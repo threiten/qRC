@@ -11,8 +11,8 @@ from root_pandas import read_root
 
 from joblib import delayed, Parallel, parallel_backend, register_parallel_backend
 
-from ..tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
-from ..tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
+from .tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
+from .tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
 from .Corrector import Corrector, applyCorrection
 
 import logging
