@@ -61,7 +61,7 @@ class Shifter:
         return [np.divide(pTail_data-pTail_mc,pPeak_mc),np.divide(pPeak_data-pPeak_mc,pTail_mc)]
 
     def __call__(self):
-        return np.array([self.shiftYev(iev) for iev in xrange(self.Y.size)]).ravel()
+        return np.array([self.shiftYev(iev) for iev in range(self.Y.size)]).ravel()
 
 
 def applyShift(mcp0tclf,datap0tclf,tail_reg,X,Y):

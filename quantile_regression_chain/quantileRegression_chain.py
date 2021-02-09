@@ -589,11 +589,11 @@ class quantileRegression_chain(object):
         logger.info("Computing %s, correcting %s, stride %s" % (name,correctedVariables,stride) )
         if key == 'mc':
             with parallel_backend(self.backend):
-                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeIdMva)(weightsEB,weightsEE,correctedVariables,self.MC[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.MC.index.size,stride)))
+                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeIdMva)(weightsEB,weightsEE,correctedVariables,self.MC[ch:ch+stride],tpC, leg2016) for ch in range(0,self.MC.index.size,stride)))
             self.MC[name] = Y
         elif key == 'data':
             with parallel_backend(self.backend):
-                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeIdMva)(weightsEB,weightsEE,correctedVariables,self.data[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.data.index.size,stride)))
+                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeIdMva)(weightsEB,weightsEE,correctedVariables,self.data[ch:ch+stride],tpC, leg2016) for ch in range(0,self.data.index.size,stride)))
             self.data[name] = Y
 
     def computeEleIdMvas(self,mvas,weights,key,n_jobs=1,leg2016=False):
@@ -619,11 +619,11 @@ class quantileRegression_chain(object):
         logger.info("Computing %s, correcting %s, stride %s" % (name,correctedVariables,stride))
         if key == 'mc':
             with parallel_backend(self.backend):
-                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeEleIdMva)(weightsEB1,weightsEB2,weightsEE,correctedVariables,self.MC[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.MC.index.size,stride)))
+                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeEleIdMva)(weightsEB1,weightsEB2,weightsEE,correctedVariables,self.MC[ch:ch+stride],tpC, leg2016) for ch in range(0,self.MC.index.size,stride)))
             self.MC[name] = Y
         elif key == 'data':
             with parallel_backend(self.backend):
-                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeEleIdMva)(weightsEB1,weightsEB2,weightsEE,correctedVariables,self.data[ch:ch+stride],tpC, leg2016) for ch in xrange(0,self.data.index.size,stride)))
+                Y = np.concatenate(Parallel(n_jobs=n_jobs,verbose=20)(delayed(helpComputeEleIdMva)(weightsEB1,weightsEB2,weightsEE,correctedVariables,self.data[ch:ch+stride],tpC, leg2016) for ch in range(0,self.data.index.size,stride)))
             self.data[name] = Y
 
 
