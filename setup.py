@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 setup(
     name = "quantile_regression_chain",
     author = "Thomas Reitenspiess",
-    packages = ['quantile_regression_chain', 'quantile_regression_chain.tmva'],
+    packages = ['quantile_regression_chain', 'quantile_regression_chain.tmva', 'quantile_regression_chain.plotting'],
     install_requires = [
         'numpy',
         'sklearn',
