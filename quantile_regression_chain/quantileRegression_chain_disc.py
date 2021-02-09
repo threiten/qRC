@@ -1,6 +1,5 @@
 import gzip
 import os
-#import ROOT as rt
 import xgboost as xgb
 import numpy as np
 import pandas as pd
@@ -11,10 +10,10 @@ from joblib import delayed, Parallel, parallel_backend, register_parallel_backen
 from sklearn.ensemble import GradientBoostingRegressor
 from ..tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
 from ..tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
-from Corrector import Corrector, applyCorrection
-from qRC.python.quantileRegression_chain import quantileRegression_chain, trainClf
-from qRC.python.Shifter import Shifter, applyShift
-from qRC.python.Shifter2D import Shifter2D, apply2DShift
+from .Corrector import Corrector, applyCorrection
+from .quantile_regression_chain import quantileRegression_chain, trainClf
+from .Shifter import Shifter, applyShift
+from .Shifter2D import Shifter2D, apply2DShift
 
 class quantileRegression_chain_disc(quantileRegression_chain):
 
