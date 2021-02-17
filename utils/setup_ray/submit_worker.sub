@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+address=$1
+password=$2
+
+#SBATCH -J manual-worker
+#SBATCH -n 1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=1G
+#SBATCH -t 00:30:00
+
+ray start --address=${address} --redis-password=${password} --num-cpus 1 --block
