@@ -1,0 +1,21 @@
+dataframes:
+  data_EB:
+    df_data_EB_Iso_train.h5
+  data_EE:
+    df_data_EE_Iso_train.h5
+  mc_EB:
+    df_mc_EB_Iso_train.h5
+  mc_EE:
+    df_mc_EE_Iso_train.h5
+
+variables:
+  ['probePhoIso']
+
+year:
+  2018
+
+workDir:
+  /path_to_workDir
+
+weightsDir:
+  /path_to_weightsDir
