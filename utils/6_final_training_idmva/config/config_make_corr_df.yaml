@@ -1,0 +1,43 @@
+dataframes:
+  data:
+    EB:
+      input: df_data_EB_test.h5
+      output: df_data_EB_test_IdMVA_5M.h5
+    EE:
+      input: df_data_EE_test.h5
+      output: df_data_EE_test_IdMVA_5M.h5
+  mc:
+    EB:
+      input: df_mc_EB_test.h5
+      output: df_mc_EB_test_corr_clf_5M.h5
+    EE:
+      input: df_mc_EE_test.h5
+      output: df_mc_EE_test_corr_clf_5M.h5
+
+showerShapes:
+  ['probeCovarianceIeIp','probeS4','probeR9','probePhiWidth','probeSigmaIeIe','probeEtaWidth']
+
+chIsos:
+  ['probeChIso03','probeChIso03worst']
+
+year:
+ 2018
+
+workDir:
+  /path
+
+weightsDirs:
+  showerShapes:
+    /path
+  phoIso:
+    /path
+  chIsos:
+    /path
+
+finalWeightsDirs:
+  showerShapes:
+    /path
+  phoIso:
+    /path
+  chIsos:
+    /path
