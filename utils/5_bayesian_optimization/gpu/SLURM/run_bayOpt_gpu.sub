@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#SBATCH --job-name=bayOpt_gpu
+#SBATCH -p gpu
+#SBATCH --account=gpu_gres
+#SBATCH --nodes=1
+#SBATCH --ntasks=5
+#SBATCH --gres=gpu:1
+#SBATCH --mem=3GB
+
+var=$1
+
+python doBayOpt_qRC.py -v ${var} -n 5 2>&1 | tee outputs/output_bayOpt_gpu_${var}_18.txt
