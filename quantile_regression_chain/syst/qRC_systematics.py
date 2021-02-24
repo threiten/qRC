@@ -205,7 +205,7 @@ class systematics(object):
             label = label + ' EB' if 'abs(probeScEta)<1.4442' in cut else label + ' EE'
 
         # df_data['probePhoIdMVAtr'] = df_data['newPhoIDtr']
-        plltt = pldmc.plot_dmc_hist(self.df, df_data, ratio=True, norm=True, cut_str='', label=label, **dic)
+        plltt = plot_dmc_hist(self.df, df_data=df_data, ratio=True, norm=True, cut_str='', label=label, **dic)
         plltt.draw()
 
         xc = 0.5*(plltt.bins[1:]+plltt.bins[:-1])
@@ -249,10 +249,16 @@ class systematics(object):
 
         # This needs to be changed because when running for EE none of the two conditions seem to be
         # fulfilled
-        if np.all(np.abs(self.df['probeScEta'].values) > 1.56):
-            title = 'trasfhee'
-        elif np.all(np.abs(self.df['probeScEta'].values) < 1.4442):
+        #if np.all(np.abs(self.df['probeScEta'].values) > 1.56):
+            #title = 'trasfhee'
+        #elif np.all(np.abs(self.df['probeScEta'].values) < 1.4442):
+            #title = 'trasfheb'
+
+        if np.all(np.abs(self.df['probeScEta'].values) < 1.4442):
             title = 'trasfheb'
+        else:
+            title = 'trasfhee'
+
 
         if 'ROOT' in sys.modules:
 

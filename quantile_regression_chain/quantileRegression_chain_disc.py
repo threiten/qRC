@@ -11,7 +11,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from .tmva.IdMVAComputer import IdMvaComputer, helpComputeIdMva
 from .tmva.eleIdMVAComputer import eleIdMvaComputer, helpComputeEleIdMva
 from .Corrector import Corrector, applyCorrection
-from .quantile_regression_chain import quantileRegression_chain, trainClf
+from .quantileRegression_chain import quantileRegression_chain, trainClf
 from .Shifter import Shifter, applyShift
 from .Shifter2D import Shifter2D, apply2DShift
 
