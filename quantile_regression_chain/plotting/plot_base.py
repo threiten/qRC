@@ -40,7 +40,7 @@ class plotBase(object):
         if 'num' in kwargs:
             self.title += ' {}'.format(kwargs['num'])
 
-        self.mc = df_mc_read.loc[:, self.mc_vars]
+        self.mc = df_mc_read.reindex(columns=self.mc_vars)
         if df_data is not None:
             self.data = df_data_read.loc[:, [var]].values
         else:
