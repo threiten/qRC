@@ -33,7 +33,7 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         features = self.kinrho
         weightsDir = weightsDir if weightsDir.startswith('/') else '{}/{}'.format(self.workDir, weightsDir)
 
-        df['p0t_{}'.format(var)] = np.apply_along_axis(lambda x: 0 if x==0 else 1,0,df[var].reshape(1,-1))
+        df['p0t_{}'.format(var)] = np.apply_along_axis(lambda x: 0 if x==0 else 1,0,df[var].values.reshape(1,-1))
         X = df.loc[:,features].values
         Y = df['p0t_{}'.format(var)].values
         clf = xgb.XGBClassifier(n_estimators=300,learning_rate=0.05,maxDepth=10,subsample=0.5,gamma=0, n_jobs=n_jobs)
@@ -84,7 +84,17 @@ class quantileRegression_chain_disc(quantileRegression_chain):
         Y = self.MC.query('{}!=0'.format(var))[var].values
 
         with parallel_backend(self.backend):
-            Parallel(n_jobs=len(self.quantiles),verbose=20)(delayed(trainClf)(q,5,500,X,Y,save=True,outDir='{}/{}'.format(self.workDir,weightsDir),name='mc_weights_tail_{}_{}_{}'.format(self.EBEE,var,str(q).replace('.','p')),X_names=features,Y_name=var) for q in self.quantiles)
+            Parallel(n_jobs=len(self.quantiles),verbose=20)(
+                    delayed(trainClf)(
+                        q,
+                        5,
+                        500,
+                        X,
+                        Y,
+                        save=True,
+                        outDir = weightsDir if weightsDir.startswith('/') else '{}/{}'.format(self.workDir,weightsDir),
+                        name='mc_weights_tail_{}_{}_{}'.format(self.EBEE,var,str(q).replace('.','p')),
+                        X_names=features,Y_name=var) for q in self.quantiles)
 
     def loadTailRegressors(self,varrs,weightsDir):
 

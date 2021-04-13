@@ -87,7 +87,7 @@ class quantileRegression_chain(object):
             Dataframe from read *.root file
         """
 
-        root_file = uproot4.open(path)
+        root_file = uproot.open(path)
         up_tree = root_file[tree]
 
         if self.year == '2016' and 'Data' not in tree:
@@ -662,6 +662,7 @@ class quantileRegression_chain(object):
         import ray
         from ray.util.joblib import register_ray
 
+        ray.shutdown()
         ray.init(address=cluster_id)
         register_ray()
         logger.info('Connecting to Ray, {} nodes available'.format(len(ray.nodes())))
