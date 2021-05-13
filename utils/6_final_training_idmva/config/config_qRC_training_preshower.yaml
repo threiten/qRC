@@ -1,0 +1,24 @@
+dataframes:
+  data_EB:
+    df_data_EB_train.h5
+  data_EE:
+    df_data_EE_train.h5
+  mc_EB:
+    df_mc_EB_train.h5
+  mc_EE:
+    df_mc_EE_train.h5
+
+variables:
+  ['phoIdMVA_esEnovSCRawEn']
+
+year:
+  2018
+
+workDir:
+  /work/gallim/dataframes/UL2018/correct_preshower/full_dataframes_etacut
+
+weightsDir:
+  /work/gallim/dataframes/UL2018/correct_preshower/weights_etacut
+
+outDir:
+  /work/gallim/dataframes/UL2018/correct_preshower/weights_etacut/final
