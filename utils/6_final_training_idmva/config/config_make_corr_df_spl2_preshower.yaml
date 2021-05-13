@@ -1,0 +1,27 @@
+dataframes:
+  data:
+    EE:
+      input: df_data_EE_test.h5
+      output: df_data_EE_test_IdMVA_5M_spl2.h5
+  mc:
+    EE:
+      input: df_mc_EE_test.h5
+      output: df_mc_EE_test_corr_clf_5M_spl2.h5
+
+showerShapes:
+  ['probeCovarianceIeIp','probeS4','probeR9','probePhiWidth','probeSigmaIeIe','probeEtaWidth']
+
+chIsos:
+  ['probeChIso03','probeChIso03worst']
+
+year:
+ 2018
+
+workDir:
+  /work/gallim/dataframes/UL2018/correct_preshower/full_dataframes_etacut
+
+weightsDirs:
+  prev:
+    /work/gallim/weights/UL2018/spl2
+  preshower:
+    /work/gallim/dataframes/UL2018/correct_preshower/weights_etacut/spl2
