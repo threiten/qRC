@@ -1,0 +1,144 @@
+cuts: abs(probeScEta)>1.56 and tagPt>40 and probePt>20 and mass>80 and mass<100 and  probePassEleVeto==0 and abs(tagScEta)<2.5 and abs(probeScEta)<2.5
+
+plots:
+  pt:
+    var: probePt
+    bins: 100
+    xmin: 0
+    xmax: 100
+    weightstr_mc: weight_clf
+    type: dataMC
+    ratio_lim: (0.8,1.2),
+
+  mass:
+    var: mass
+    bins: 120
+    xmin: 60
+    xmax: 120
+    weightstr_mc: weight_clf
+    type: dataMC
+    ratio_lim: (0.8,1.2),
+
+  eta:
+    var: probeScEta
+    bins: 300
+    xmin: -3
+    xmax: 3
+    weightstr_mc: weight_clf
+    type: dataMC
+    ratio_lim: (0.8,1.2),
+
+  phi:
+    var: probePhi
+    bins: 300
+    xmin: -3.14
+    xmax: 3.14
+    weightstr_mc: weight_clf
+    type: dataMC
+    leg_loc: lower_right
+    ratio_lim: (0.8,1.2),
+
+  rho:
+    var: rho
+    bins: 60
+    xmin: 0
+    xmax: 60
+    weightstr_mc: weight_clf
+    type: dataMC
+    ratio_lim: (0.8,1.2),
+
+  Isolations:
+    var: probePhoIso, probeChIso03worst
+    bins: 100
+    xmin: 0
+    xmax: 10
+    exts: ['_corr', '_corr_1Reg']
+    weightstr_mc: weight_clf
+    type: dataMC
+    ratio_lim: (0.8,1.2),
+
+  chIsolation:
+    var: probeChIso03
+    bins: 100
+    xmin: 0
+    xmax: 10
+    weightstr_mc: weight_clf
+    exts: ['_corr', '_corr_1Reg']
+    type: dataMC
+    logy: True
+    ratio_lim: (0.8,1.2),
+
+  R9S4:
+    var: probeR9, probeS4
+    bins: 120
+    xmin: 0
+    xmax: 1.2
+    weightstr_mc: weight_clf
+    exts: ['_corr', '_corr_1Reg']
+    leg_loc: upper_left
+    type: dataMC
+    ratio_lim: (0.8,1.2),
+
+  sieie:
+    var: probeSigmaIeIe
+    bins: 100
+    xmin: 0.004
+    xmax: 0.015, 0.04
+    exts: ['_corr', '_corr_1Reg']
+    weightstr_mc: weight_clf
+    type: dataMC
+    ratio_lim: (0.8,1.2),
+
+  sieip:
+    var: probeCovarianceIeIp
+    bins: 100
+    xmin: -0.0001, -0.001
+    xmax: 0.0001, 0.001
+    exts: ['_corr', '_corr_1Reg']
+    weightstr_mc: weight_clf
+    type: dataMC
+    ratio_lim: (0.8,1.2),
+
+  etaWidth:
+    var: probeEtaWidth
+    bins: 100
+    xmin: 0
+    xmax: 0.05
+    exts: ['_corr', '_corr_1Reg']
+    weightstr_mc: weight_clf
+    type: dataMC
+    ratio_lim: (0.8,1.2),
+
+  phiWidth:
+    var: probePhiWidth
+    bins: 100
+    xmin: 0
+    xmax: 0.25
+    exts: ['_corr', '_corr_1Reg']
+    weightstr_mc: weight_clf
+    type: dataMC
+    ratio_lim: (0.8,1.2),
+
+  phoID:
+   var: newPhoID
+   bins: 80
+   xmin: -0.8
+   xmax: 1
+   exts: ['corrAll', 'corrAllFinal']
+   leg_loc: upper_left
+   weightstr_mc: weight_clf
+   type: dataMC
+   cut: abs(probeScEta)>1.56 and tagPt>40 and probePt>20 and mass>80 and mass<100 and  probePassEleVeto==0 and abs(tagScEta)<2.5 and abs(probeScEta)<2.5 and probeChIso03<6
+   ratio_lim: (0.8,1.2),
+
+  phoIDtr:
+   var: newPhoIDtr
+   bins: 50
+   xmin: 0
+   xmax: 1
+   leg_loc: lower_right
+   exts: ['corrAll']
+   weightstr_mc: weight_clf
+   type: dataMC
+   cut: abs(probeScEta)>1.56 and tagPt>40 and probePt>20 and mass>80 and mass<100 and  probePassEleVeto==0 and abs(tagScEta)<2.5 and abs(probeScEta)<2.5 and probeChIso03<6
+   ratio_lim: (0.8,1.2),

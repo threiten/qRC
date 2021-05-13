@@ -1,0 +1,30 @@
+dataframes:
+  data:
+    EB:
+      input: df_data_EB_test.h5
+      output: df_data_EB_test_IdMVA_5M.h5
+    EE:
+      input: df_data_EE_test.h5
+      #input: df_data_EE_test_nocut.h5
+      output: df_data_EE_test_IdMVA_5M.h5
+  mc:
+    EB:
+      input: df_mc_EB_test.h5
+      output: df_mc_EB_test_corr_clf_5M.h5
+    EE:
+      input: df_mc_EE_test.h5
+      #input: df_mc_EE_test_nocut.h5
+      output: df_mc_EE_test_corr_clf_5M.h5
+      #output: df_mc_EE_test_corr_clf_nocut.h5
+
+year:
+ 2018
+
+workDir:
+  /work/gallim/dataframes/UL2018/correct_preshower/full_dataframes_etacut
+
+weightsDirs:
+  /work/gallim/dataframes/UL2018/correct_preshower/weights_etacut
+
+finalWeightsDirs:
+  /work/gallim/dataframes/UL2018/correct_preshower/weights_etacut/final
